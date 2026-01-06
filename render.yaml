@@ -1,0 +1,123 @@
+databases:
+  - name: healing-eval-db
+    plan: free
+    databaseName: healing_eval
+    user: postgres
+
+services:
+  # Redis Instance
+  - type: redis
+    name: healing-eval-redis
+    plan: free
+    maxmemoryPolicy: allkeys-lru
+    ipAllowList: []
+
+  # Web Server
+  - type: web
+    name: healing-eval-server
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    dockerCommand: /server
+    healthCheckPath: /health
+    envVars:
+      - key: SERVER_HOST
+        value: 0.0.0.0
+      - key: SERVER_PORT
+        value: 8080
+      - key: DB_HOST
+        fromDatabase:
+          name: healing-eval-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: healing-eval-db
+          property: port
+      - key: DB_USER
+        fromDatabase:
+          name: healing-eval-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: healing-eval-db
+          property: password
+      - key: DB_NAME
+        fromDatabase:
+          name: healing-eval-db
+          property: database
+      - key: REDIS_HOST
+        fromService:
+          name: healing-eval-redis
+          type: redis
+          property: host
+      - key: REDIS_PORT
+        fromService:
+          name: healing-eval-redis
+          type: redis
+          property: port
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: OLLAMA_BASE_URL
+        sync: false
+      - key: OLLAMA_MODEL
+        value: "llama3.1:8b"
+      - key: LLM_DEFAULT_PROVIDER
+        value: "openai"
+
+  # Background Worker
+  - type: worker
+    name: healing-eval-worker
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    dockerCommand: /worker
+    envVars:
+      - key: DB_HOST
+        fromDatabase:
+          name: healing-eval-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: healing-eval-db
+          property: port
+      - key: DB_USER
+        fromDatabase:
+          name: healing-eval-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: healing-eval-db
+          property: password
+      - key: DB_NAME
+        fromDatabase:
+          name: healing-eval-db
+          property: database
+      - key: REDIS_HOST
+        fromService:
+          name: healing-eval-redis
+          type: redis
+          property: host
+      - key: REDIS_PORT
+        fromService:
+          name: healing-eval-redis
+          type: redis
+          property: port
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: OLLAMA_BASE_URL
+        sync: false
+      - key: OLLAMA_MODEL
+        value: "llama3.1:8b"
+      - key: LLM_DEFAULT_PROVIDER
+        value: "openai"
+      - key: WORKER_CONCURRENCY
+        value: "5"
+      - key: WORKER_BATCH_SIZE
+        value: "10"
+
