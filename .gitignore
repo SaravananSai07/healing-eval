@@ -1,3 +1,6 @@
 DEPLOY*.md
 OLLAMA*.md
 Eval*.md
+
+.env
+.DS_Store
