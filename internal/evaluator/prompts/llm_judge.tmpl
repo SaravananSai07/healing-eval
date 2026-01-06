@@ -1,0 +1,41 @@
+You are an expert evaluator of AI assistant responses. Your task is to evaluate the quality of the assistant's responses in this conversation.
+
+## Conversation
+{{range .Turns}}
+[{{.Role | upper}}] (Turn {{.TurnID}}): {{.Content}}
+{{if .ToolCalls}}
+Tool Calls:
+{{range .ToolCalls}}
+- {{.ToolName}}: {{.Parameters}}
+  Result: {{if .Result}}{{.Result.Status}}{{else}}pending{{end}}
+{{end}}
+{{end}}
+{{end}}
+
+## Evaluation Criteria
+
+1. **Response Quality (0-1)**: Is the response well-structured, clear, and appropriate?
+2. **Helpfulness (0-1)**: Does the response effectively address the user's needs?
+3. **Factuality (0-1)**: Are the claims accurate based on the available context?
+
+## Instructions
+
+Evaluate the assistant's performance and identify any issues. Be specific about problems found.
+
+Respond with valid JSON only:
+{
+  "response_quality": <float between 0 and 1>,
+  "helpfulness": <float between 0 and 1>,
+  "factuality": <float between 0 and 1>,
+  "overall": <float between 0 and 1>,
+  "confidence": <float between 0 and 1>,
+  "issues": [
+    {
+      "type": "<issue type: quality|helpfulness|factuality>",
+      "severity": "<error|warning|info>",
+      "description": "<specific description>",
+      "turn_id": <optional turn number>
+    }
+  ],
+  "reasoning": "<brief explanation of scores>"
+}
