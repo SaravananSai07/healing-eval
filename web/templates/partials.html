@@ -1,0 +1,361 @@
+{{define "recent-evaluations"}}
+<div class="table-wrapper">
+<table>
+    <thead>
+        <tr>
+            <th>Conversation</th>
+            <th>Evaluator</th>
+            <th>Score</th>
+            <th>Issues</th>
+            <th>Time</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        {{range .Evaluations}}
+        <tr onclick="showEvalDetail('{{.ConversationID}}')">
+            <td><code class="mono" style="font-size: 0.8rem;">{{.ConversationID}}</code></td>
+            <td>{{formatEvaluatorType .EvaluatorType}}</td>
+            <td class="score {{scoreClass .Scores.Overall}}">{{printf "%.2f" .Scores.Overall}}</td>
+            <td>{{len .Issues}}</td>
+            <td style="font-size: 0.85rem;">{{formatTime .CreatedAt}}</td>
+            <td><button class="action-btn action-btn-view">View</button></td>
+        </tr>
+        {{else}}
+        <tr><td colspan="6">
+            <div class="empty-state">
+                <div class="empty-state-icon">📊</div>
+                <h3>No Evaluations Yet</h3>
+                <p>Submit conversations to see evaluation results here.</p>
+            </div>
+        </td></tr>
+        {{end}}
+    </tbody>
+</table>
+</div>
+{{end}}
+
+{{define "active-issues"}}
+<div class="table-wrapper">
+<table>
+    <thead>
+        <tr>
+            <th>Issue Type</th>
+            <th>Severity</th>
+            <th>Count</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        {{range .Issues}}
+        <tr onclick="window.location='/conversations?issue={{.Type}}'">
+            <td>{{formatIssueType .Type}}</td>
+            <td><span class="badge badge-{{.Severity}}">{{formatSeverity .Severity}}</span></td>
+            <td>{{.Count}}</td>
+            <td><button class="action-btn action-btn-view">Filter</button></td>
+        </tr>
+        {{else}}
+        <tr><td colspan="4">
+            <div class="empty-state">
+                <div class="empty-state-icon">✅</div>
+                <h3>No Active Issues</h3>
+                <p>All evaluations are passing without issues.</p>
+            </div>
+        </td></tr>
+        {{end}}
+    </tbody>
+</table>
+</div>
+{{end}}
+
+{{define "evaluator-performance"}}
+<div class="table-wrapper">
+<table>
+    <thead>
+        <tr>
+            <th>Evaluator</th>
+            <th>Evaluations</th>
+            <th>Avg Score</th>
+        </tr>
+    </thead>
+    <tbody>
+        {{range .Evaluators}}
+        <tr>
+            <td>{{formatEvaluatorType .EvaluatorType}}</td>
+            <td>{{.Count}}</td>
+            <td class="score {{scoreClass .AvgScore}}">{{printf "%.2f" .AvgScore}}</td>
+        </tr>
+        {{else}}
+        <tr><td colspan="3">
+            <div class="empty-state">
+                <div class="empty-state-icon">📈</div>
+                <h3>No Performance Data</h3>
+                <p>Evaluate conversations to see evaluator metrics.</p>
+            </div>
+        </td></tr>
+        {{end}}
+    </tbody>
+</table>
+</div>
+{{end}}
+
+{{define "suggestions-table"}}
+{{if .Suggestions}}
+<div class="table-wrapper">
+<table>
+    <thead>
+        <tr>
+            <th>Type</th>
+            <th>Target</th>
+            <th>Suggestion</th>
+            <th>Confidence</th>
+            <th>Status</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {{range .Suggestions}}
+        <tr>
+            <td><span class="badge badge-{{if eq .Type "prompt"}}info{{else}}warning{{end}}">{{formatSuggestionType .Type}}</span></td>
+            <td><code class="mono">{{.Target}}</code></td>
+            <td style="max-width: 300px; overflow: hidden; text-overflow: ellipsis;">{{.Suggestion}}</td>
+            <td class="score {{scoreClass .Confidence}}">{{printf "%.0f" (mul .Confidence 100)}}%</td>
+            <td><span class="badge badge-{{statusClass .Status}}">{{formatStatus .Status}}</span></td>
+            <td>
+                {{if eq .Status "pending"}}
+                <button class="btn btn-sm btn-primary" hx-post="/api/v1/suggestions/{{.ID}}/approve" hx-swap="none" hx-on::after-request="htmx.trigger('#suggestions-content', 'refresh')">Approve</button>
+                <button class="btn btn-sm btn-secondary" hx-post="/api/v1/suggestions/{{.ID}}/reject" hx-swap="none" hx-on::after-request="htmx.trigger('#suggestions-content', 'refresh')">Reject</button>
+                {{else}}
+                <span style="color: var(--text-muted);">—</span>
+                {{end}}
+            </td>
+        </tr>
+        {{end}}
+    </tbody>
+</table>
+</div>
+{{else}}
+<div class="empty-state">
+    <div class="empty-state-icon">💡</div>
+    <h3>No Suggestions Yet</h3>
+    <p>Suggestions are generated when patterns of issues are detected across multiple conversations. The system analyzes:</p>
+    <ul style="text-align: left; max-width: 400px; margin: 16px auto; font-size: 0.875rem;">
+        <li>Recurring low scores from specific evaluators</li>
+        <li>Common issue types appearing frequently</li>
+        <li>Tool call errors or hallucinations</li>
+        <li>Coherence problems in multi-turn conversations</li>
+    </ul>
+    <p style="margin-top: 16px;">Submit more conversations with issues to trigger suggestion generation.</p>
+</div>
+{{end}}
+{{end}}
+
+{{define "evaluator-accuracy"}}
+<div class="table-wrapper">
+<table>
+    <thead>
+        <tr>
+            <th>Evaluator</th>
+            <th>Count</th>
+            <th>Avg Confidence</th>
+            <th>Issues Found</th>
+        </tr>
+    </thead>
+    <tbody>
+        {{range .Evaluators}}
+        <tr>
+            <td>{{formatEvaluatorType .EvaluatorType}}</td>
+            <td>{{.Count}}</td>
+            <td class="score {{scoreClass .AvgConfidence}}">{{printf "%.0f" (mul .AvgConfidence 100)}}%</td>
+            <td>{{.IssuesFound}}</td>
+        </tr>
+        {{else}}
+        <tr><td colspan="4">
+            <div class="empty-state">
+                <div class="empty-state-icon">🎯</div>
+                <h3>No Accuracy Data</h3>
+                <p>Run evaluations to see accuracy metrics.</p>
+            </div>
+        </td></tr>
+        {{end}}
+    </tbody>
+</table>
+</div>
+{{end}}
+
+{{define "calibration"}}
+<div class="empty-state">
+    <div class="empty-state-icon">⚖️</div>
+    <h3>Calibration Requires Human Labels</h3>
+    <p>To measure calibration, we need human-annotated labels to compare against automated evaluations.</p>
+    <ul style="text-align: left; max-width: 400px; margin: 16px auto; font-size: 0.875rem;">
+        <li>Add annotations via the Conversations page</li>
+        <li>Compare automated scores vs human ratings</li>
+        <li>Track over/under-confidence patterns</li>
+    </ul>
+</div>
+{{end}}
+
+{{define "blind-spots"}}
+{{if .BlindSpots}}
+<div class="table-wrapper">
+<table>
+    <thead>
+        <tr>
+            <th>Evaluator</th>
+            <th>Issue Type</th>
+            <th>Recall</th>
+            <th>Suggested Action</th>
+        </tr>
+    </thead>
+    <tbody>
+        {{range .BlindSpots}}
+        <tr>
+            <td>{{formatEvaluatorType .EvaluatorType}}</td>
+            <td>{{formatIssueType .IssueType}}</td>
+            <td class="score score-low">{{printf "%.0f" (mul .Recall 100)}}%</td>
+            <td style="max-width: 200px; font-size: 0.8rem;">{{.SuggestedAction}}</td>
+        </tr>
+        {{end}}
+    </tbody>
+</table>
+</div>
+{{else}}
+<div class="empty-state">
+    <div class="empty-state-icon">🔍</div>
+    <h3>No Blind Spots Detected</h3>
+    <p>Blind spots are areas where automated evaluators miss issues that humans catch.</p>
+    <ul style="text-align: left; max-width: 400px; margin: 16px auto; font-size: 0.875rem;">
+        <li>Add human annotations to conversations</li>
+        <li>System will compare human vs automated findings</li>
+        <li>Low recall indicates a blind spot to address</li>
+    </ul>
+</div>
+{{end}}
+{{end}}
+
+{{define "conversations-list"}}
+{{if .IssueFilter}}
+<div style="padding: 12px 16px; background: rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 8px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center;">
+    <span style="font-size: 0.875rem;">
+        Showing conversations with <strong style="color: var(--info);">{{formatIssueType .IssueFilter}}</strong> issues ({{.Total}} found)
+    </span>
+    <a href="/conversations" style="color: var(--text-secondary); font-size: 0.85rem; text-decoration: none;">Clear filter ×</a>
+</div>
+{{end}}
+<div class="table-wrapper">
+<table>
+    <thead>
+        <tr>
+            <th>Conversation ID</th>
+            <th>Evals</th>
+            <th>Score</th>
+            <th>Issues</th>
+            <th>Time</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        {{range .Conversations}}
+        <tr onclick="showConversation('{{.ID}}')">
+            <td><code class="mono" style="font-size: 0.75rem;">{{.ID}}</code></td>
+            <td>{{.EvalCount}}</td>
+            <td class="score {{scoreClass .AvgScore}}">{{printf "%.2f" .AvgScore}}</td>
+            <td>{{.IssueCount}}</td>
+            <td style="font-size: 0.8rem;">{{formatTime .CreatedAt}}</td>
+            <td><button class="action-btn action-btn-view">View</button></td>
+        </tr>
+        {{else}}
+        <tr><td colspan="6">
+            <div class="empty-state">
+                <div class="empty-state-icon">💬</div>
+                {{if .IssueFilter}}
+                <h3>No Matching Conversations</h3>
+                <p>No conversations found with this issue type.</p>
+                {{else}}
+                <h3>No Conversations Yet</h3>
+                <p>Submit conversations using the form above to see them here.</p>
+                {{end}}
+            </div>
+        </td></tr>
+        {{end}}
+    </tbody>
+</table>
+</div>
+{{if gt .TotalPages 1}}
+<div class="pagination">
+    <button onclick="loadPage({{sub .CurrentPage 1}})" {{if le .CurrentPage 1}}disabled{{end}}>← Previous</button>
+    <span>Page {{.CurrentPage}} of {{.TotalPages}} ({{.Total}} total)</span>
+    <button onclick="loadPage({{add .CurrentPage 1}})" {{if ge .CurrentPage .TotalPages}}disabled{{end}}>Next →</button>
+</div>
+{{end}}
+{{end}}
+
+{{define "conversation-detail"}}
+<h2 style="margin-bottom: 8px;">Conversation Details</h2>
+<div style="display: flex; gap: 16px; font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 24px;">
+    <span><strong>ID:</strong> <code class="mono">{{.Conversation.ID}}</code></span>
+    <span><strong>Agent:</strong> {{.Conversation.AgentVersion}}</span>
+    <span><strong>Turns:</strong> {{len .Conversation.Turns}}</span>
+</div>
+
+<h3 style="margin-bottom: 12px; font-size: 0.875rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em;">Conversation Flow</h3>
+<div style="margin-bottom: 24px;">
+{{range .Conversation.Turns}}
+<div style="margin-bottom: 12px; padding: 16px; border-radius: 8px; background: var(--bg-tertiary); border-left: 3px solid {{if eq .Role "user"}}var(--accent){{else}}var(--info){{end}};">
+    <div style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.05em;">
+        {{if eq .Role "user"}}👤 User{{else}}🤖 Assistant{{end}} · Turn {{.TurnID}}
+    </div>
+    <div style="color: var(--text-primary);">{{.Content}}</div>
+    {{if .ToolCalls}}
+    {{range .ToolCalls}}
+    <div style="margin-top: 12px; padding: 12px; background: var(--bg-primary); border-radius: 6px; font-size: 0.85rem;">
+        <div style="color: var(--info); font-weight: 500; margin-bottom: 6px;">🔧 Tool: {{.ToolName}}</div>
+        <div style="margin-bottom: 6px;"><span style="color: var(--text-muted);">Parameters:</span> <code class="mono" style="font-size: 0.8rem;">{{toJSON .Parameters}}</code></div>
+        {{if .Result}}
+        <div><span style="color: var(--text-muted);">Result:</span> <span class="badge badge-{{if eq .Result.Status "success"}}success{{else}}error{{end}}">{{formatStatus .Result.Status}}</span></div>
+        {{end}}
+    </div>
+    {{end}}
+    {{end}}
+</div>
+{{end}}
+</div>
+
+{{if .Conversation.Feedback}}
+<h3 style="margin-bottom: 12px; font-size: 0.875rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em;">Feedback</h3>
+<div style="padding: 16px; background: var(--bg-tertiary); border-radius: 8px; margin-bottom: 24px;">
+    {{if .Conversation.Feedback.UserRating}}
+    <p><strong>User Rating:</strong> {{.Conversation.Feedback.UserRating}}/5</p>
+    {{end}}
+    {{if .Conversation.Feedback.OpsReview}}
+    <p><strong>Ops Review:</strong> {{.Conversation.Feedback.OpsReview.Quality}} - {{.Conversation.Feedback.OpsReview.Notes}}</p>
+    {{end}}
+</div>
+{{end}}
+
+<h3 style="margin-bottom: 12px; font-size: 0.875rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em;">Evaluation Results</h3>
+{{range .Evaluations}}
+<div style="margin-bottom: 12px; padding: 16px; background: var(--bg-tertiary); border-radius: 8px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+        <span style="font-weight: 600;">{{formatEvaluatorType .EvaluatorType}}</span>
+        <span class="score {{scoreClass .Scores.Overall}}" style="font-size: 1.25rem;">{{printf "%.2f" .Scores.Overall}}</span>
+    </div>
+    <div style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 8px;">
+        Confidence: {{printf "%.0f" (mul .Confidence 100)}}% · Latency: {{.LatencyMs}}ms
+    </div>
+    {{if .Issues}}
+    <div style="margin-top: 12px;">
+        {{range .Issues}}
+        <div style="margin-top: 8px; padding: 10px; background: var(--bg-primary); border-radius: 6px; font-size: 0.85rem; display: flex; gap: 10px; align-items: flex-start;">
+            <span class="badge badge-{{.Severity}}">{{formatSeverity .Severity}}</span>
+            <span>{{.Description}}</span>
+        </div>
+        {{end}}
+    </div>
+    {{end}}
+</div>
+{{else}}
+<p style="color: var(--text-secondary);">No evaluations yet</p>
+{{end}}
+{{end}}

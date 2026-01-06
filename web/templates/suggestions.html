@@ -1,0 +1,89 @@
+{{define "content"}}
+<h1>Suggestions</h1>
+
+<div class="card">
+    <div class="card-header">
+        <h2>
+            Improvement Suggestions
+            <span class="info-icon" title="Suggestions are automatically generated when the system detects recurring patterns of issues. They recommend changes to prompts, tool configurations, or evaluation thresholds to improve agent performance.">?</span>
+        </h2>
+        <div style="display: flex; gap: 8px;">
+            <button class="btn btn-sm btn-secondary" hx-get="/partials/suggestions-table" hx-target="#suggestions-content" hx-swap="innerHTML">All</button>
+            <button class="btn btn-sm btn-secondary" hx-get="/partials/suggestions-table?status=pending" hx-target="#suggestions-content" hx-swap="innerHTML">Pending</button>
+            <button class="btn btn-sm btn-secondary" hx-get="/partials/suggestions-table?status=approved" hx-target="#suggestions-content" hx-swap="innerHTML">Approved</button>
+        </div>
+    </div>
+    <div id="suggestions-content" hx-get="/partials/suggestions-table" hx-trigger="load, refresh" hx-swap="innerHTML">
+        <div class="loading"></div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h2>
+            How Suggestions Work
+            <span class="info-icon" title="Understanding the suggestion lifecycle helps you make better decisions about which suggestions to approve.">?</span>
+        </h2>
+    </div>
+    <div class="grid grid-3">
+        <div style="padding: 16px; background: var(--bg-tertiary); border-radius: 8px;">
+            <div style="font-size: 1.5rem; margin-bottom: 8px;">🔍</div>
+            <h3 style="font-size: 0.9rem; margin-bottom: 8px;">Pattern Detection</h3>
+            <p style="font-size: 0.8rem; color: var(--text-secondary);">
+                The system analyzes evaluation results to find recurring issues like low scores, repeated errors, or consistent problems across conversations.
+            </p>
+        </div>
+        <div style="padding: 16px; background: var(--bg-tertiary); border-radius: 8px;">
+            <div style="font-size: 1.5rem; margin-bottom: 8px;">💡</div>
+            <h3 style="font-size: 0.9rem; margin-bottom: 8px;">Suggestion Generation</h3>
+            <p style="font-size: 0.8rem; color: var(--text-secondary);">
+                When patterns are identified, the system generates specific suggestions to address them—whether it's adjusting prompts, fixing tool configs, or tuning thresholds.
+            </p>
+        </div>
+        <div style="padding: 16px; background: var(--bg-tertiary); border-radius: 8px;">
+            <div style="font-size: 1.5rem; margin-bottom: 8px;">✅</div>
+            <h3 style="font-size: 0.9rem; margin-bottom: 8px;">Review & Apply</h3>
+            <p style="font-size: 0.8rem; color: var(--text-secondary);">
+                Review suggestions, approve ones you agree with, and track their impact on subsequent evaluations. Rejected suggestions help train the system.
+            </p>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h2>
+            Suggestion Types
+            <span class="info-icon" title="Different suggestion types target different aspects of your agent's configuration.">?</span>
+        </h2>
+    </div>
+    <div class="table-wrapper">
+    <table>
+        <thead>
+            <tr>
+                <th>Type</th>
+                <th>Description</th>
+                <th>Example</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><span class="badge badge-info">Prompt</span></td>
+                <td>Changes to agent prompts or system instructions</td>
+                <td style="font-size: 0.8rem; color: var(--text-secondary);">"Add explicit instruction to confirm user intent before taking actions"</td>
+            </tr>
+            <tr>
+                <td><span class="badge badge-warning">Tool</span></td>
+                <td>Modifications to tool definitions or parameters</td>
+                <td style="font-size: 0.8rem; color: var(--text-secondary);">"Add validation for 'location' parameter in restaurant_search tool"</td>
+            </tr>
+            <tr>
+                <td><span class="badge badge-pending">Threshold</span></td>
+                <td>Adjustments to evaluation thresholds</td>
+                <td style="font-size: 0.8rem; color: var(--text-secondary);">"Lower confidence threshold for LLM Judge from 0.8 to 0.7"</td>
+            </tr>
+        </tbody>
+    </table>
+    </div>
+</div>
+{{end}}

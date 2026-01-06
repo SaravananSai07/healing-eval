@@ -1,0 +1,204 @@
+{{define "content"}}
+<h1>Conversations</h1>
+
+<div class="card">
+    <div class="card-header">
+        <h2>
+            Submit Conversations for Evaluation
+            <span class="info-icon" title="Paste JSON conversation data here to submit for evaluation. The system will run all evaluators and store the results.">?</span>
+        </h2>
+    </div>
+    <div class="json-input-section">
+        <textarea id="json-input" placeholder='[
+  {
+    "conversation_id": "conv_001",
+    "agent_version": "v1.0",
+    "turns": [
+      {"turn_id": 1, "role": "user", "content": "Hello", "timestamp": "2024-01-15T10:30:00Z"},
+      {"turn_id": 2, "role": "assistant", "content": "Hi there!", "timestamp": "2024-01-15T10:30:01Z"}
+    ]
+  }
+]'></textarea>
+        <div style="margin-top: 12px; display: flex; gap: 12px; align-items: center;">
+            <button class="btn btn-primary" onclick="submitConversations()">Submit for Evaluation</button>
+            <span id="submit-status"></span>
+        </div>
+    </div>
+</div>
+
+<div class="card" id="conversations-section">
+    <div class="card-header">
+        <h2>
+            Evaluated Conversations
+            <span class="info-icon" title="Click any conversation to view the full conversation with all turns, tool calls, and evaluation results.">?</span>
+        </h2>
+        <div style="display: flex; gap: 8px; align-items: center;">
+            <span id="active-filter" style="font-size: 0.8rem; color: var(--text-secondary);"></span>
+            <button class="btn btn-sm btn-secondary" onclick="clearFilter()">Clear Filter</button>
+            <button class="btn btn-sm btn-secondary" hx-get="/partials/conversations-list" hx-target="#conversations-list" hx-swap="innerHTML">
+                Refresh
+            </button>
+        </div>
+    </div>
+    <div id="conversations-list" hx-trigger="load, refresh" hx-swap="innerHTML">
+        <div class="loading"></div>
+    </div>
+</div>
+
+<div id="conversation-detail-modal" class="modal">
+    <div class="modal-content">
+        <span class="modal-close" onclick="closeModal()">&times;</span>
+        <div id="modal-body"></div>
+    </div>
+</div>
+
+<script>
+function submitConversations() {
+    const input = document.getElementById('json-input').value;
+    const status = document.getElementById('submit-status');
+    
+    try {
+        const conversations = JSON.parse(input);
+        const payload = { conversations: Array.isArray(conversations) ? conversations : [conversations] };
+        
+        status.innerHTML = '<span style="color: var(--warning);">⏳ Submitting...</span>';
+        
+        fetch('/api/v1/conversations', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.accepted) {
+                status.innerHTML = '<span style="color: var(--success);">✓ ' + data.accepted + ' conversation(s) submitted. Processing...</span>';
+                setTimeout(() => {
+                    loadConversations();
+                    status.innerHTML = '<span style="color: var(--text-muted);">Refreshed. Evaluation may take 30-60 seconds.</span>';
+                }, 3000);
+            } else {
+                status.innerHTML = '<span style="color: var(--error);">✗ Error: ' + (data.error || 'Unknown error') + '</span>';
+            }
+        })
+        .catch(e => {
+            status.innerHTML = '<span style="color: var(--error);">✗ Error: ' + e.message + '</span>';
+        });
+    } catch (e) {
+        status.innerHTML = '<span style="color: var(--error);">✗ Invalid JSON: ' + e.message + '</span>';
+    }
+}
+
+function showConversation(id) {
+    const modal = document.getElementById('conversation-detail-modal');
+    const body = document.getElementById('modal-body');
+    body.innerHTML = '<div style="text-align: center; padding: 40px;"><div class="loading"></div><p style="margin-top: 16px; color: var(--text-secondary);">Loading conversation...</p></div>';
+    
+    // Trigger animation
+    modal.offsetHeight;
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+    
+    fetch('/partials/conversation/' + id)
+        .then(r => r.text())
+        .then(html => { body.innerHTML = html; });
+}
+
+function closeModal() {
+    const modal = document.getElementById('conversation-detail-modal');
+    modal.classList.remove('active');
+    document.body.style.overflow = '';
+}
+
+function loadPage(page) {
+    if (page < 1) return;
+    const params = new URLSearchParams(window.location.search);
+    params.set('page', page);
+    htmx.ajax('GET', '/partials/conversations-list?' + params.toString(), {target: '#conversations-list', swap: 'innerHTML'});
+}
+
+function loadConversations() {
+    const params = new URLSearchParams(window.location.search);
+    htmx.ajax('GET', '/partials/conversations-list?' + params.toString(), {target: '#conversations-list', swap: 'innerHTML'});
+}
+
+function clearFilter() {
+    window.location = '/conversations';
+}
+
+function updateFilterDisplay() {
+    const params = new URLSearchParams(window.location.search);
+    const issue = params.get('issue');
+    const filterEl = document.getElementById('active-filter');
+    if (issue) {
+        filterEl.innerHTML = 'Filtering by: <strong>' + formatIssueType(issue) + '</strong>';
+        document.querySelector('[onclick="clearFilter()"]').style.display = 'inline-flex';
+    } else {
+        filterEl.innerHTML = '';
+        document.querySelector('[onclick="clearFilter()"]').style.display = 'none';
+    }
+}
+
+function formatIssueType(type) {
+    const map = {
+        'context_loss': 'Context Loss',
+        'reference_handling': 'Reference Handling',
+        'hallucination': 'Hallucination',
+        'tool_error': 'Tool Error',
+        'warning': 'Warning',
+        'minor': 'Minor Issue',
+        'inadequate_response': 'Inadequate Response'
+    };
+    return map[type] || type.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    updateFilterDisplay();
+    loadConversations();
+    
+    // Scroll to conversations section if there's a filter
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('issue')) {
+        setTimeout(() => {
+            document.getElementById('conversations-section').scrollIntoView({ behavior: 'smooth' });
+        }, 500);
+    }
+});
+
+document.addEventListener('click', function(e) {
+    if (e.target.id === 'conversation-detail-modal') {
+        closeModal();
+    }
+});
+
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeModal();
+    }
+});
+</script>
+
+<style>
+.json-input-section textarea {
+    width: 100%;
+    min-height: 180px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    color: var(--text-primary);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    resize: vertical;
+    line-height: 1.5;
+}
+
+.json-input-section textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+}
+
+.json-input-section textarea::placeholder {
+    color: var(--text-muted);
+}
+</style>
+{{end}}

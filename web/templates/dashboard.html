@@ -1,0 +1,108 @@
+{{define "content"}}
+<h1>Dashboard</h1>
+
+<div class="grid grid-4" style="margin-bottom: 24px;">
+    <div class="stat-card" onclick="window.location='/conversations'">
+        <div class="stat-value" hx-get="/api/stats/conversations" hx-trigger="load" hx-swap="innerHTML">-</div>
+        <div class="stat-label">Conversations</div>
+    </div>
+    <div class="stat-card" onclick="window.location='/conversations'">
+        <div class="stat-value" hx-get="/api/stats/evaluations" hx-trigger="load" hx-swap="innerHTML">-</div>
+        <div class="stat-label">Evaluations</div>
+    </div>
+    <div class="stat-card" onclick="window.location='/suggestions'">
+        <div class="stat-value" hx-get="/api/stats/suggestions" hx-trigger="load" hx-swap="innerHTML">-</div>
+        <div class="stat-label">Suggestions</div>
+    </div>
+    <div class="stat-card" onclick="window.location='/metrics'">
+        <div class="stat-value" hx-get="/api/stats/avg-score" hx-trigger="load" hx-swap="innerHTML">-</div>
+        <div class="stat-label">Avg Score</div>
+    </div>
+</div>
+
+<div class="grid grid-2">
+    <div class="card">
+        <div class="card-header">
+            <h2>
+                Recent Evaluations
+                <span class="info-icon" title="Shows the latest evaluation results. Click any row to view details.">?</span>
+            </h2>
+        </div>
+        <div hx-get="/partials/recent-evaluations" hx-trigger="load" hx-swap="innerHTML">
+            <div class="loading"></div>
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-header">
+            <h2>
+                Active Issues
+                <span class="info-icon" title="Issues detected by evaluators. Click Filter to see conversations with this issue.">?</span>
+            </h2>
+        </div>
+        <div hx-get="/partials/active-issues" hx-trigger="load" hx-swap="innerHTML">
+            <div class="loading"></div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h2>
+            Evaluator Performance
+            <span class="info-icon" title="Shows avg scores by evaluator type: LLM Judge, Tool Call, Coherence, Heuristic.">?</span>
+        </h2>
+    </div>
+    <div hx-get="/partials/evaluator-performance" hx-trigger="load" hx-swap="innerHTML">
+        <div class="loading"></div>
+    </div>
+</div>
+
+<div id="eval-detail-modal" class="modal">
+    <div class="modal-content">
+        <span class="modal-close" onclick="closeEvalModal()">&times;</span>
+        <div id="eval-modal-body"></div>
+    </div>
+</div>
+
+<script>
+function showEvalDetail(conversationId) {
+    const modal = document.getElementById('eval-detail-modal');
+    const body = document.getElementById('eval-modal-body');
+    body.innerHTML = '<div class="loading"></div>';
+    
+    // Trigger reflow before adding active class for animation
+    modal.offsetHeight;
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+    
+    fetch('/partials/conversation/' + conversationId)
+        .then(r => r.text())
+        .then(html => { body.innerHTML = html; });
+}
+
+function closeEvalModal() {
+    const modal = document.getElementById('eval-detail-modal');
+    modal.classList.remove('active');
+    document.body.style.overflow = '';
+}
+
+function filterByIssue(issueType) {
+    window.location = '/conversations?issue=' + encodeURIComponent(issueType);
+}
+
+// Close modal on backdrop click
+document.addEventListener('click', function(e) {
+    const modal = document.getElementById('eval-detail-modal');
+    if (e.target === modal) {
+        closeEvalModal();
+    }
+});
+
+// Close modal on Escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeEvalModal();
+    }
+});
+</script>
+{{end}}

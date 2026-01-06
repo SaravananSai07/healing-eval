@@ -1,0 +1,125 @@
+{{define "content"}}
+<h1>Metrics</h1>
+
+<div class="card">
+    <div class="card-header">
+        <h2>
+            Evaluator Accuracy
+            <span class="info-icon" title="Shows how each automated evaluator is performing. High confidence with many issues found indicates the evaluator is actively catching problems.">?</span>
+        </h2>
+    </div>
+    <div hx-get="/partials/evaluator-accuracy" hx-trigger="load" hx-swap="innerHTML">
+        <div class="loading"></div>
+    </div>
+</div>
+
+<div class="grid grid-2">
+    <div class="card">
+        <div class="card-header">
+            <h2>
+                Calibration Status
+                <span class="info-icon" title="Calibration measures how well automated evaluation scores align with human judgments. Requires human annotations to calculate.">?</span>
+            </h2>
+        </div>
+        <div hx-get="/partials/calibration" hx-trigger="load" hx-swap="innerHTML">
+            <div class="loading"></div>
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-header">
+            <h2>
+                Blind Spots
+                <span class="info-icon" title="Blind spots are issue types that automated evaluators frequently miss but humans catch. Low recall indicates a blind spot to address.">?</span>
+            </h2>
+        </div>
+        <div hx-get="/partials/blind-spots" hx-trigger="load" hx-swap="innerHTML">
+            <div class="loading"></div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h2>
+            Understanding Meta-Evaluation
+            <span class="info-icon" title="Meta-evaluation is the process of evaluating the evaluators themselves to ensure they're working correctly.">?</span>
+        </h2>
+    </div>
+    <div class="grid grid-2">
+        <div style="padding: 20px; background: var(--bg-tertiary); border-radius: 8px;">
+            <h3 style="font-size: 0.9rem; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 1.25rem;">📊</span> Key Metrics Explained
+            </h3>
+            <ul style="font-size: 0.85rem; color: var(--text-secondary); list-style: none; padding: 0;">
+                <li style="padding: 8px 0; border-bottom: 1px solid var(--border);">
+                    <strong style="color: var(--text-primary);">Confidence</strong> — How certain the evaluator is about its assessment (0-100%)
+                </li>
+                <li style="padding: 8px 0; border-bottom: 1px solid var(--border);">
+                    <strong style="color: var(--text-primary);">Precision</strong> — Of issues flagged, how many were real problems
+                </li>
+                <li style="padding: 8px 0; border-bottom: 1px solid var(--border);">
+                    <strong style="color: var(--text-primary);">Recall</strong> — Of actual problems, how many were caught
+                </li>
+                <li style="padding: 8px 0;">
+                    <strong style="color: var(--text-primary);">F1 Score</strong> — Balance between precision and recall
+                </li>
+            </ul>
+        </div>
+        <div style="padding: 20px; background: var(--bg-tertiary); border-radius: 8px;">
+            <h3 style="font-size: 0.9rem; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 1.25rem;">🎯</span> Actionable Insights
+            </h3>
+            <ul style="font-size: 0.85rem; color: var(--text-secondary); list-style: none; padding: 0;">
+                <li style="padding: 8px 0; border-bottom: 1px solid var(--border);">
+                    <strong style="color: var(--warning);">Low Confidence</strong> — Evaluator needs clearer criteria or more context
+                </li>
+                <li style="padding: 8px 0; border-bottom: 1px solid var(--border);">
+                    <strong style="color: var(--warning);">Low Precision</strong> — Too many false positives; tighten detection criteria
+                </li>
+                <li style="padding: 8px 0; border-bottom: 1px solid var(--border);">
+                    <strong style="color: var(--warning);">Low Recall</strong> — Missing real issues; expand detection scope
+                </li>
+                <li style="padding: 8px 0;">
+                    <strong style="color: var(--success);">High F1</strong> — Evaluator is well-balanced and effective
+                </li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h2>
+            Getting Started with Meta-Evaluation
+        </h2>
+    </div>
+    <div style="padding: 20px;">
+        <p style="color: var(--text-secondary); margin-bottom: 20px;">
+            To unlock full meta-evaluation capabilities, you need human annotations to compare against automated evaluations:
+        </p>
+        <div class="grid grid-3">
+            <div style="padding: 16px; background: var(--bg-tertiary); border-radius: 8px; text-align: center;">
+                <div style="font-size: 1.5rem; margin-bottom: 8px;">1️⃣</div>
+                <h4 style="font-size: 0.85rem; margin-bottom: 6px;">Add Annotations</h4>
+                <p style="font-size: 0.8rem; color: var(--text-secondary);">
+                    Go to Conversations and add human annotations to evaluated conversations
+                </p>
+            </div>
+            <div style="padding: 16px; background: var(--bg-tertiary); border-radius: 8px; text-align: center;">
+                <div style="font-size: 1.5rem; margin-bottom: 8px;">2️⃣</div>
+                <h4 style="font-size: 0.85rem; margin-bottom: 6px;">Compare Results</h4>
+                <p style="font-size: 0.8rem; color: var(--text-secondary);">
+                    System calculates agreement between human and automated evaluations
+                </p>
+            </div>
+            <div style="padding: 16px; background: var(--bg-tertiary); border-radius: 8px; text-align: center;">
+                <div style="font-size: 1.5rem; margin-bottom: 8px;">3️⃣</div>
+                <h4 style="font-size: 0.85rem; margin-bottom: 6px;">Improve Evaluators</h4>
+                <p style="font-size: 0.8rem; color: var(--text-secondary);">
+                    Use insights to adjust prompts and thresholds for better accuracy
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{{end}}
