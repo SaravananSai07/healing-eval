@@ -50,11 +50,13 @@ func main() {
 
 	convRepo := storage.NewConversationRepo(db)
 	evalRepo := storage.NewEvaluationRepo(db)
+	reviewQueueRepo := storage.NewReviewQueueRepo(db)
 
 	w := worker.New(
 		q,
 		convRepo,
 		evalRepo,
+		reviewQueueRepo,
 		orchestrator,
 		cfg.Worker.Concurrency,
 		cfg.Worker.BatchSize,
