@@ -1,8 +1,12 @@
 package api
 
 import (
+	"log"
+
 	"github.com/gin-gonic/gin"
 	"github.com/saisaravanan/healing-eval/internal/api/handler"
+	"github.com/saisaravanan/healing-eval/internal/config"
+	"github.com/saisaravanan/healing-eval/internal/llm"
 	"github.com/saisaravanan/healing-eval/internal/queue"
 	"github.com/saisaravanan/healing-eval/internal/storage"
 )
@@ -20,10 +24,24 @@ func NewRouter(db *storage.PostgresDB, q *queue.RedisQueue) *Router {
 	convRepo := storage.NewConversationRepo(db)
 	evalRepo := storage.NewEvaluationRepo(db)
 	suggRepo := storage.NewSuggestionRepo(db)
+	reviewQueueRepo := storage.NewReviewQueueRepo(db)
+
+	// Create LLM client for suggestion generation
+	cfg, err := config.Load()
+	var llmClient *llm.Client
+	if err != nil {
+		log.Printf("Warning: Failed to load config for LLM client: %v", err)
+	} else {
+		llmClient, err = llm.NewClient(&cfg.LLM)
+		if err != nil {
+			log.Printf("Warning: Failed to create LLM client: %v", err)
+		}
+	}
 
 	convHandler := handler.NewConversationHandler(convRepo, q)
 	evalHandler := handler.NewEvaluationHandler(evalRepo)
-	suggHandler := handler.NewSuggestionHandler(suggRepo)
+	suggHandler := handler.NewSuggestionHandler(suggRepo, evalRepo, llmClient)
+	reviewHandler := handler.NewReviewHandler(reviewQueueRepo, evalRepo, convRepo)
 	metricsHandler := handler.NewMetricsHandler()
 	webHandler := handler.NewWebHandler(convRepo, evalRepo, suggRepo)
 
@@ -34,6 +52,7 @@ func NewRouter(db *storage.PostgresDB, q *queue.RedisQueue) *Router {
 	engine.GET("/", webHandler.Dashboard)
 	engine.GET("/conversations", webHandler.Conversations)
 	engine.GET("/suggestions", webHandler.Suggestions)
+	engine.GET("/reviews", webHandler.Reviews)
 	engine.GET("/metrics", webHandler.Metrics)
 
 	engine.GET("/partials/recent-evaluations", webHandler.RecentEvaluations)
@@ -69,10 +88,19 @@ func NewRouter(db *storage.PostgresDB, q *queue.RedisQueue) *Router {
 		suggestions := v1.Group("/suggestions")
 		{
 			suggestions.GET("", suggHandler.List)
+			suggestions.POST("/generate", suggHandler.Generate)
 			suggestions.GET("/:id", suggHandler.GetByID)
 			suggestions.POST("/:id/approve", suggHandler.Approve)
 			suggestions.POST("/:id/reject", suggHandler.Reject)
 			suggestions.GET("/:id/impact", suggHandler.GetImpact)
+		}
+
+		reviews := v1.Group("/reviews")
+		{
+			reviews.GET("/pending", reviewHandler.GetPending)
+			reviews.GET("/:id", reviewHandler.GetByID)
+			reviews.POST("/:id/complete", reviewHandler.CompleteReview)
+			reviews.POST("/:id/assign", reviewHandler.AssignReview)
 		}
 
 		metrics := v1.Group("/metrics")
