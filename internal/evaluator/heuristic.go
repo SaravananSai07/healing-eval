@@ -53,6 +53,7 @@ func (e *HeuristicEvaluator) Evaluate(ctx context.Context, conv *domain.Conversa
 		ID:             uuid.New().String(),
 		ConversationID: conv.ID,
 		EvaluatorType:  domain.EvaluatorTypeHeuristic,
+		Status:         domain.EvalStatusSuccess,
 		Scores:         scores,
 		Issues:         issues,
 		Confidence:     0.95,

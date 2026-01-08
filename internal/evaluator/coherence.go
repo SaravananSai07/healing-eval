@@ -46,6 +46,7 @@ func (e *CoherenceEvaluator) Evaluate(ctx context.Context, conv *domain.Conversa
 			ID:             uuid.New().String(),
 			ConversationID: conv.ID,
 			EvaluatorType:  domain.EvaluatorTypeCoherence,
+			Status:         domain.EvalStatusSuccess,
 			Scores: domain.Scores{
 				Overall:     1.0,
 				Coherence:   1.0,
@@ -78,10 +79,19 @@ func (e *CoherenceEvaluator) Evaluate(ctx context.Context, conv *domain.Conversa
 		return nil, fmt.Errorf("parse response: %w", err)
 	}
 
+	// Calculate cost
+	cost := CalculateCost(resp.ModelName, resp.Usage.PromptTokens, resp.Usage.CompletionTokens)
+
 	return &domain.Evaluation{
-		ID:             uuid.New().String(),
-		ConversationID: conv.ID,
-		EvaluatorType:  domain.EvaluatorTypeCoherence,
+		ID:               uuid.New().String(),
+		ConversationID:   conv.ID,
+		EvaluatorType:    domain.EvaluatorTypeCoherence,
+		Status:           domain.EvalStatusSuccess,
+		ModelName:        resp.ModelName,
+		PromptTokens:     resp.Usage.PromptTokens,
+		CompletionTokens: resp.Usage.CompletionTokens,
+		TotalTokens:      resp.Usage.TotalTokens,
+		EstimatedCostUSD: cost,
 		Scores: domain.Scores{
 			Overall:     result.Overall,
 			Coherence:   result.Coherence,
@@ -100,7 +110,10 @@ func (e *CoherenceEvaluator) buildPrompt(conv *domain.Conversation) string {
 
 	sb.WriteString("Evaluate coherence and consistency in this multi-turn conversation:\n\n")
 
-	turns := conv.Turns
+	// Sanitize conversation to prevent prompt injection and handle large messages
+	sanitizer := NewMessageSanitizer()
+	turns := sanitizer.PrepareConversationForEval(conv.Turns)
+
 	if len(turns) > e.windowSize*2 {
 		sb.WriteString("[Earlier conversation summarized]\n")
 		sb.WriteString(e.summarizeEarlierTurns(turns[:len(turns)-e.windowSize]))
@@ -140,17 +153,80 @@ Respond with JSON:
 }
 
 func (e *CoherenceEvaluator) summarizeEarlierTurns(turns []domain.Turn) string {
+	// Try LLM-based summarization first
+	summary, err := e.summarizeWithLLM(turns)
+	if err == nil && summary != "" {
+		return summary
+	}
+
+	// Fallback to simple summarization
+	return e.summarizeSimple(turns)
+}
+
+func (e *CoherenceEvaluator) summarizeWithLLM(turns []domain.Turn) (string, error) {
+	var sb strings.Builder
+	sb.WriteString("Summarize the following conversation turns, focusing on:\n")
+	sb.WriteString("1. Key topics discussed\n")
+	sb.WriteString("2. Important entities (names, places, dates, etc.)\n")
+	sb.WriteString("3. User requests and assistant commitments\n")
+	sb.WriteString("4. Any context that would be needed to understand later turns\n\n")
+
+	// Include all turns but keep it concise
+	for i, turn := range turns {
+		if i >= 20 {
+			sb.WriteString(fmt.Sprintf("... and %d more turns\n", len(turns)-i))
+			break
+		}
+		role := strings.ToUpper(turn.Role)
+		content := turn.Content
+		if len(content) > 200 {
+			content = content[:200] + "..."
+		}
+		sb.WriteString(fmt.Sprintf("[%s] (Turn %d): %s\n", role, turn.TurnID, content))
+	}
+
+	sb.WriteString("\nProvide a concise summary (3-5 sentences):")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	resp, err := e.client.Complete(ctx, &llm.CompletionRequest{
+		Messages: []llm.Message{
+			{Role: "system", Content: "You are a helpful assistant that creates concise, informative summaries of conversations."},
+			{Role: "user", Content: sb.String()},
+		},
+		MaxTokens:   300,
+		Temperature: 0.3,
+	})
+
+	if err != nil {
+		return "", err
+	}
+
+	return "Summary: " + resp.Content + "\n", nil
+}
+
+func (e *CoherenceEvaluator) summarizeSimple(turns []domain.Turn) string {
 	var sb strings.Builder
 	sb.WriteString("Key points from earlier conversation:\n")
 
+	userMsgCount := 0
 	for _, turn := range turns {
 		if turn.Role == "user" {
-			if len(turn.Content) > 100 {
-				sb.WriteString(fmt.Sprintf("- User (Turn %d): %s...\n", turn.TurnID, turn.Content[:100]))
-			} else {
-				sb.WriteString(fmt.Sprintf("- User (Turn %d): %s\n", turn.TurnID, turn.Content))
+			userMsgCount++
+			// Include first few user messages
+			if userMsgCount <= 5 {
+				content := turn.Content
+				if len(content) > 100 {
+					content = content[:100] + "..."
+				}
+				sb.WriteString(fmt.Sprintf("- User (Turn %d): %s\n", turn.TurnID, content))
 			}
 		}
+	}
+
+	if userMsgCount > 5 {
+		sb.WriteString(fmt.Sprintf("... and %d more user messages\n", userMsgCount-5))
 	}
 
 	return sb.String()

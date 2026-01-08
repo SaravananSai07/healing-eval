@@ -13,14 +13,16 @@ import (
 )
 
 type ToolCallEvaluator struct {
-	client *llm.Client
-	weight float64
+	client     *llm.Client
+	weight     float64
+	windowSize int
 }
 
 func NewToolCallEvaluator(client *llm.Client) *ToolCallEvaluator {
 	return &ToolCallEvaluator{
-		client: client,
-		weight: 0.25,
+		client:     client,
+		weight:     0.25,
+		windowSize: 20,
 	}
 }
 
@@ -44,6 +46,7 @@ func (e *ToolCallEvaluator) Evaluate(ctx context.Context, conv *domain.Conversat
 			ID:             uuid.New().String(),
 			ConversationID: conv.ID,
 			EvaluatorType:  domain.EvaluatorTypeToolCall,
+			Status:         domain.EvalStatusSuccess,
 			Scores: domain.Scores{
 				Overall:           1.0,
 				ToolAccuracy:      1.0,
@@ -77,10 +80,19 @@ func (e *ToolCallEvaluator) Evaluate(ctx context.Context, conv *domain.Conversat
 		return nil, fmt.Errorf("parse response: %w", err)
 	}
 
+	// Calculate cost
+	cost := CalculateCost(resp.ModelName, resp.Usage.PromptTokens, resp.Usage.CompletionTokens)
+
 	return &domain.Evaluation{
-		ID:             uuid.New().String(),
-		ConversationID: conv.ID,
-		EvaluatorType:  domain.EvaluatorTypeToolCall,
+		ID:               uuid.New().String(),
+		ConversationID:   conv.ID,
+		EvaluatorType:    domain.EvaluatorTypeToolCall,
+		Status:           domain.EvalStatusSuccess,
+		ModelName:        resp.ModelName,
+		PromptTokens:     resp.Usage.PromptTokens,
+		CompletionTokens: resp.Usage.CompletionTokens,
+		TotalTokens:      resp.Usage.TotalTokens,
+		EstimatedCostUSD: cost,
 		Scores: domain.Scores{
 			Overall:           result.Overall,
 			ToolAccuracy:      result.Overall,
@@ -100,7 +112,19 @@ func (e *ToolCallEvaluator) buildPrompt(conv *domain.Conversation) string {
 
 	sb.WriteString("Evaluate the tool calls in this conversation:\n\n")
 
-	for _, turn := range conv.Turns {
+	// Sanitize conversation to prevent prompt injection and handle large messages
+	sanitizer := NewMessageSanitizer()
+	turns := sanitizer.PrepareConversationForEval(conv.Turns)
+
+	// Apply windowing for long conversations with tool calls
+	if len(turns) > e.windowSize*2 {
+		sb.WriteString("[Earlier tool calls summarized]\n")
+		sb.WriteString(e.summarizeEarlierToolCalls(turns[:len(turns)-e.windowSize]))
+		sb.WriteString("\n[Recent turns with details]\n\n")
+		turns = turns[len(turns)-e.windowSize:]
+	}
+
+	for _, turn := range turns {
 		if turn.Role == "user" {
 			sb.WriteString(fmt.Sprintf("[USER] (Turn %d): %s\n\n", turn.TurnID, turn.Content))
 		}
@@ -140,6 +164,44 @@ Respond with JSON:
   "issues": [{"type": "...", "severity": "error|warning|info", "description": "...", "turn_id": <int or null>}],
   "reasoning": "..."
 }`)
+
+	return sb.String()
+}
+
+func (e *ToolCallEvaluator) summarizeEarlierToolCalls(turns []domain.Turn) string {
+	var sb strings.Builder
+	sb.WriteString("Summary of tool usage patterns from earlier conversation:\n")
+
+	toolUsage := make(map[string]int)
+	totalToolCalls := 0
+	successCount := 0
+	errorCount := 0
+
+	for _, turn := range turns {
+		for _, tc := range turn.ToolCalls {
+			totalToolCalls++
+			toolUsage[tc.ToolName]++
+			if tc.Result != nil {
+				if tc.Result.Status == "success" {
+					successCount++
+				} else {
+					errorCount++
+				}
+			}
+		}
+	}
+
+	if totalToolCalls > 0 {
+		sb.WriteString(fmt.Sprintf("- Total tool calls: %d\n", totalToolCalls))
+		sb.WriteString(fmt.Sprintf("- Success rate: %d/%d\n", successCount, totalToolCalls))
+		if errorCount > 0 {
+			sb.WriteString(fmt.Sprintf("- Errors: %d\n", errorCount))
+		}
+		sb.WriteString("- Tools used:\n")
+		for tool, count := range toolUsage {
+			sb.WriteString(fmt.Sprintf("  • %s (%d times)\n", tool, count))
+		}
+	}
 
 	return sb.String()
 }

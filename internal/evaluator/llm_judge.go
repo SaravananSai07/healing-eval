@@ -13,14 +13,16 @@ import (
 )
 
 type LLMJudgeEvaluator struct {
-	client *llm.Client
-	weight float64
+	client     *llm.Client
+	weight     float64
+	windowSize int
 }
 
 func NewLLMJudgeEvaluator(client *llm.Client) *LLMJudgeEvaluator {
 	return &LLMJudgeEvaluator{
-		client: client,
-		weight: 0.4,
+		client:     client,
+		weight:     0.4,
+		windowSize: 15,
 	}
 }
 
@@ -60,10 +62,19 @@ func (e *LLMJudgeEvaluator) Evaluate(ctx context.Context, conv *domain.Conversat
 		return nil, fmt.Errorf("parse response: %w", err)
 	}
 
+	// Calculate cost
+	cost := CalculateCost(resp.ModelName, resp.Usage.PromptTokens, resp.Usage.CompletionTokens)
+
 	return &domain.Evaluation{
-		ID:             uuid.New().String(),
-		ConversationID: conv.ID,
-		EvaluatorType:  domain.EvaluatorTypeLLMJudge,
+		ID:               uuid.New().String(),
+		ConversationID:   conv.ID,
+		EvaluatorType:    domain.EvaluatorTypeLLMJudge,
+		Status:           domain.EvalStatusSuccess,
+		ModelName:        resp.ModelName,
+		PromptTokens:     resp.Usage.PromptTokens,
+		CompletionTokens: resp.Usage.CompletionTokens,
+		TotalTokens:      resp.Usage.TotalTokens,
+		EstimatedCostUSD: cost,
 		Scores: domain.Scores{
 			Overall:         result.Overall,
 			ResponseQuality: result.ResponseQuality,
@@ -83,7 +94,19 @@ func (e *LLMJudgeEvaluator) buildPrompt(conv *domain.Conversation) string {
 
 	sb.WriteString("Evaluate this AI assistant conversation:\n\n")
 
-	for _, turn := range conv.Turns {
+	// Sanitize conversation to prevent prompt injection and handle large messages
+	sanitizer := NewMessageSanitizer()
+	turns := sanitizer.PrepareConversationForEval(conv.Turns)
+
+	// Apply windowing for long conversations
+	if len(turns) > e.windowSize*2 {
+		sb.WriteString("[Earlier conversation summarized]\n")
+		sb.WriteString(e.summarizeEarlierTurns(turns[:len(turns)-e.windowSize]))
+		sb.WriteString("\n[Recent turns in detail]\n\n")
+		turns = turns[len(turns)-e.windowSize:]
+	}
+
+	for _, turn := range turns {
 		role := strings.ToUpper(turn.Role)
 		sb.WriteString(fmt.Sprintf("[%s] (Turn %d): %s\n", role, turn.TurnID, turn.Content))
 
@@ -115,6 +138,37 @@ Respond with JSON:
   "issues": [{"type": "...", "severity": "error|warning|info", "description": "...", "turn_id": <int or null>}],
   "reasoning": "..."
 }`)
+
+	return sb.String()
+}
+
+func (e *LLMJudgeEvaluator) summarizeEarlierTurns(turns []domain.Turn) string {
+	var sb strings.Builder
+	sb.WriteString("Summary of earlier conversation:\n")
+
+	userMsgCount := 0
+	assistantMsgCount := 0
+	toolCallCount := 0
+
+	for _, turn := range turns {
+		if turn.Role == "user" {
+			userMsgCount++
+			// Include first few and key user messages
+			if userMsgCount <= 3 {
+				content := turn.Content
+				if len(content) > 120 {
+					content = content[:120] + "..."
+				}
+				sb.WriteString(fmt.Sprintf("- User (Turn %d): %s\n", turn.TurnID, content))
+			}
+		} else if turn.Role == "assistant" {
+			assistantMsgCount++
+			toolCallCount += len(turn.ToolCalls)
+		}
+	}
+
+	sb.WriteString(fmt.Sprintf("\n[%d user messages, %d assistant responses, %d tool calls in earlier conversation]\n", 
+		userMsgCount, assistantMsgCount, toolCallCount))
 
 	return sb.String()
 }
