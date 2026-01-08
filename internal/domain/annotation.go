@@ -54,7 +54,7 @@ func (m *AgreementMetrics) Calculate(annotations []Annotation) {
 	}
 
 	m.PercentAgree = float64(maxCount) / float64(len(annotations))
-	
+
 	if len(annotations) == 2 {
 		m.CohenKappa = calculateCohenKappa(annotations)
 		m.FleissKappa = m.CohenKappa
@@ -132,12 +132,17 @@ func GetConfidenceLevel(confidence float64) ConfidenceLevel {
 }
 
 type ReviewQueueItem struct {
-	ConversationID string           `json:"conversation_id"`
-	EvaluationID   string           `json:"evaluation_id"`
-	Confidence     float64          `json:"confidence"`
-	Reason         string           `json:"reason"`
-	Annotations    []Annotation     `json:"annotations,omitempty"`
-	Agreement      *AgreementMetrics `json:"agreement,omitempty"`
-	CreatedAt      time.Time        `json:"created_at"`
+	ID                string            `json:"id"`
+	ConversationID    string            `json:"conversation_id"`
+	EvaluationID      *string           `json:"evaluation_id,omitempty"`
+	Reason            string            `json:"reason"`
+	Priority          int               `json:"priority"`
+	Status            string            `json:"status"`
+	AssignedTo        *string           `json:"assigned_to,omitempty"`
+	RoutingConfidence float64           `json:"routing_confidence"`
+	CreatedAt         time.Time         `json:"created_at"`
+	ReviewedAt        *time.Time        `json:"reviewed_at,omitempty"`
+	ReviewerNotes     string            `json:"reviewer_notes,omitempty"`
+	Annotations       []Annotation      `json:"annotations,omitempty"`
+	Agreement         *AgreementMetrics `json:"agreement,omitempty"`
 }
-
