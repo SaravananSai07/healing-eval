@@ -110,6 +110,7 @@ func (p *AnthropicProvider) Complete(ctx context.Context, req *CompletionRequest
 	return &CompletionResponse{
 		Content:      content,
 		FinishReason: apiResp.StopReason,
+		ModelName:    model,
 		Usage: Usage{
 			PromptTokens:     apiResp.Usage.InputTokens,
 			CompletionTokens: apiResp.Usage.OutputTokens,
@@ -133,12 +134,12 @@ type anthropicMessage struct {
 }
 
 type anthropicResponse struct {
-	ID         string           `json:"id"`
-	Type       string           `json:"type"`
-	Role       string           `json:"role"`
-	Content    []contentBlock   `json:"content"`
-	StopReason string           `json:"stop_reason"`
-	Usage      anthropicUsage   `json:"usage"`
+	ID         string         `json:"id"`
+	Type       string         `json:"type"`
+	Role       string         `json:"role"`
+	Content    []contentBlock `json:"content"`
+	StopReason string         `json:"stop_reason"`
+	Usage      anthropicUsage `json:"usage"`
 }
 
 type contentBlock struct {
@@ -150,4 +151,3 @@ type anthropicUsage struct {
 	InputTokens  int `json:"input_tokens"`
 	OutputTokens int `json:"output_tokens"`
 }
-

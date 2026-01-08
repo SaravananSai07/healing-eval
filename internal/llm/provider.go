@@ -29,6 +29,7 @@ type Message struct {
 type CompletionResponse struct {
 	Content      string
 	FinishReason string
+	ModelName    string
 	Usage        Usage
 	Latency      time.Duration
 }
@@ -62,6 +63,10 @@ func NewClient(cfg *config.LLMConfig) (*Client, error) {
 
 	if cfg.AnthropicAPIKey != "" {
 		c.providers["anthropic"] = NewAnthropicProvider(cfg.AnthropicAPIKey)
+	}
+
+	if cfg.OpenRouterAPIKey != "" {
+		c.providers["openrouter"] = NewOpenRouterProvider(cfg.OpenRouterAPIKey, cfg.OpenRouterModel, cfg.OpenRouterReasoning)
 	}
 
 	if len(c.providers) == 0 {

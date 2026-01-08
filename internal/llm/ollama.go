@@ -99,6 +99,7 @@ func (p *OllamaProvider) Complete(ctx context.Context, req *CompletionRequest) (
 	return &CompletionResponse{
 		Content:      apiResp.Message.Content,
 		FinishReason: "stop",
+		ModelName:    model,
 		Usage: Usage{
 			PromptTokens:     apiResp.PromptEvalCount,
 			CompletionTokens: apiResp.EvalCount,
@@ -132,4 +133,3 @@ type ollamaResponse struct {
 	PromptEvalCount int           `json:"prompt_eval_count"`
 	EvalCount       int           `json:"eval_count"`
 }
-

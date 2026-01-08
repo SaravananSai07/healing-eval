@@ -68,6 +68,7 @@ func (p *OpenAIProvider) Complete(ctx context.Context, req *CompletionRequest) (
 	return &CompletionResponse{
 		Content:      resp.Choices[0].Message.Content,
 		FinishReason: string(resp.Choices[0].FinishReason),
+		ModelName:    model,
 		Usage: Usage{
 			PromptTokens:     resp.Usage.PromptTokens,
 			CompletionTokens: resp.Usage.CompletionTokens,
@@ -76,4 +77,3 @@ func (p *OpenAIProvider) Complete(ctx context.Context, req *CompletionRequest) (
 		Latency: time.Since(start),
 	}, nil
 }
-
