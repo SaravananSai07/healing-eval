@@ -224,6 +224,13 @@ func (h *WebHandler) Metrics(c *gin.Context) {
 	})
 }
 
+func (h *WebHandler) Reviews(c *gin.Context) {
+	h.renderPage(c, "reviews", PageData{
+		Title: "Human Review Queue",
+		Page:  "reviews",
+	})
+}
+
 func (h *WebHandler) renderPage(c *gin.Context, name string, data PageData) {
 	tmpl, ok := h.templates[name]
 	if !ok {

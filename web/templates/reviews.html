@@ -1,0 +1,27 @@
+{{define "content"}}
+<h1>Human Review Queue</h1>
+
+<div class="card">
+    <div class="card-header">
+        <h2>Pending Reviews</h2>
+        <p style="color: var(--text-secondary); font-size: 0.9rem; margin-top: 4px;">
+            Conversations that need human review due to low confidence, partial evaluation, or quality concerns
+        </p>
+    </div>
+    <div hx-get="/api/v1/reviews/pending?limit=50" hx-trigger="load" hx-swap="innerHTML">
+        <div class="loading"></div>
+    </div>
+</div>
+
+<script>
+function viewReview(conversationId) {
+    window.location = '/conversations?id=' + conversationId;
+}
+
+// Auto-refresh every 30 seconds
+setInterval(function() {
+    htmx.trigger('body', 'load');
+}, 30000);
+</script>
+{{end}}
+

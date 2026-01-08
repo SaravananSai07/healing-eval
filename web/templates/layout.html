@@ -864,6 +864,104 @@
             color: var(--text-secondary);
             font-size: 0.8rem;
         }
+
+        /* ========== STATUS BADGES ========== */
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .status-badge.status-success {
+            background: rgba(34, 197, 94, 0.1);
+            color: #22c55e;
+        }
+
+        .status-badge.status-partial {
+            background: rgba(245, 158, 11, 0.1);
+            color: #f59e0b;
+        }
+
+        .status-badge.status-failed {
+            background: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+        }
+
+        .retry-badge {
+            background: rgba(59, 130, 246, 0.1);
+            color: #3b82f6;
+            font-size: 0.65em;
+            padding: 2px 6px;
+            margin-left: 6px;
+        }
+
+        /* ========== FAILURE DETAILS ========== */
+        .failures-box {
+            background: #fef2f2;
+            border-left: 4px solid #ef4444;
+            padding: 12px;
+            margin-top: 12px;
+            border-radius: 4px;
+        }
+
+        .failures-box strong {
+            color: #991b1b;
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        .failures-box ul {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        .failures-box li {
+            padding: 6px 0;
+            border-bottom: 1px solid rgba(239, 68, 68, 0.1);
+        }
+
+        .failures-box li:last-child {
+            border-bottom: none;
+        }
+
+        /* ========== TOKEN USAGE ========== */
+        .token-usage {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+            margin-top: 12px;
+            padding: 12px;
+            background: var(--card-bg);
+            border-radius: 8px;
+            flex-wrap: wrap;
+        }
+
+        .token-usage strong {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .token-usage span {
+            font-size: 0.9rem;
+            color: var(--text);
+            font-weight: 600;
+        }
+
+        .token-cost {
+            color: #22c55e;
+        }
+
+        .token-stat {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
     </style>
 </head>
 <body>
@@ -878,6 +976,7 @@
                     <a href="/" {{if eq .Page "dashboard"}}class="active"{{end}}>Dashboard</a>
                     <a href="/conversations" {{if eq .Page "conversations"}}class="active"{{end}}>Conversations</a>
                     <a href="/suggestions" {{if eq .Page "suggestions"}}class="active"{{end}}>Suggestions</a>
+                    <a href="/reviews" {{if eq .Page "reviews"}}class="active"{{end}}>Reviews</a>
                     <a href="/metrics" {{if eq .Page "metrics"}}class="active"{{end}}>Metrics</a>
                 </div>
             </div>
