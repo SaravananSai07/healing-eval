@@ -157,6 +157,13 @@ func (r *ConversationRepo) MarkProcessed(ctx context.Context, id string) error {
 	return err
 }
 
+func (r *ConversationRepo) MarkProcessedWithStatus(ctx context.Context, id string, status string) error {
+	_, err := r.db.Pool.Exec(ctx, `
+		UPDATE conversations SET processed_at = NOW(), evaluation_status = $1 WHERE id = $2
+	`, status, id)
+	return err
+}
+
 func (r *ConversationRepo) GetUnprocessed(ctx context.Context, limit int) ([]*domain.Conversation, error) {
 	rows, err := r.db.Pool.Query(ctx, `
 		SELECT id, agent_version, turns, feedback, metadata, created_at

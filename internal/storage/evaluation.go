@@ -36,9 +36,17 @@ func (r *EvaluationRepo) Create(ctx context.Context, eval *domain.Evaluation) er
 	}
 
 	_, err = r.db.Pool.Exec(ctx, `
-		INSERT INTO evaluations (id, conversation_id, evaluator_type, scores, issues, confidence, raw_output, latency_ms, created_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-	`, eval.ID, eval.ConversationID, eval.EvaluatorType, scoresJSON, issuesJSON, eval.Confidence, eval.RawOutput, eval.LatencyMs, time.Now())
+		INSERT INTO evaluations (
+			id, conversation_id, evaluator_type, 
+			status, model_name, prompt_tokens, completion_tokens, total_tokens, 
+			estimated_cost_usd, error_message,
+			scores, issues, confidence, raw_output, latency_ms, created_at
+		)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+	`, eval.ID, eval.ConversationID, eval.EvaluatorType,
+		eval.Status, eval.ModelName, eval.PromptTokens, eval.CompletionTokens, eval.TotalTokens,
+		eval.EstimatedCostUSD, eval.ErrorMessage,
+		scoresJSON, issuesJSON, eval.Confidence, eval.RawOutput, eval.LatencyMs, time.Now())
 
 	if err != nil {
 		return fmt.Errorf("insert: %w", err)
@@ -60,9 +68,17 @@ func (r *EvaluationRepo) CreateBatch(ctx context.Context, evals []*domain.Evalua
 		issuesJSON, _ := json.Marshal(eval.Issues)
 
 		batch.Queue(`
-			INSERT INTO evaluations (id, conversation_id, evaluator_type, scores, issues, confidence, raw_output, latency_ms, created_at)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-		`, eval.ID, eval.ConversationID, eval.EvaluatorType, scoresJSON, issuesJSON, eval.Confidence, eval.RawOutput, eval.LatencyMs, now)
+			INSERT INTO evaluations (
+				id, conversation_id, evaluator_type, 
+				status, model_name, prompt_tokens, completion_tokens, total_tokens, 
+				estimated_cost_usd, error_message,
+				scores, issues, confidence, raw_output, latency_ms, created_at
+			)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+		`, eval.ID, eval.ConversationID, eval.EvaluatorType,
+			eval.Status, eval.ModelName, eval.PromptTokens, eval.CompletionTokens, eval.TotalTokens,
+			eval.EstimatedCostUSD, eval.ErrorMessage,
+			scoresJSON, issuesJSON, eval.Confidence, eval.RawOutput, eval.LatencyMs, now)
 	}
 
 	results := r.db.Pool.SendBatch(ctx, batch)
@@ -79,7 +95,10 @@ func (r *EvaluationRepo) CreateBatch(ctx context.Context, evals []*domain.Evalua
 
 func (r *EvaluationRepo) GetByConversationID(ctx context.Context, conversationID string) ([]*domain.Evaluation, error) {
 	rows, err := r.db.Pool.Query(ctx, `
-		SELECT id, conversation_id, evaluator_type, scores, issues, confidence, raw_output, latency_ms, created_at
+		SELECT id, conversation_id, evaluator_type, 
+			status, model_name, prompt_tokens, completion_tokens, total_tokens, 
+			estimated_cost_usd, error_message,
+			scores, issues, confidence, raw_output, latency_ms, created_at
 		FROM evaluations
 		WHERE conversation_id = $1
 		ORDER BY created_at DESC
@@ -148,7 +167,10 @@ func (r *EvaluationRepo) Query(ctx context.Context, req *domain.EvaluationsQuery
 	}
 
 	query := fmt.Sprintf(`
-		SELECT id, conversation_id, evaluator_type, scores, issues, confidence, raw_output, latency_ms, created_at
+		SELECT id, conversation_id, evaluator_type, 
+			status, model_name, prompt_tokens, completion_tokens, total_tokens, 
+			estimated_cost_usd, error_message,
+			scores, issues, confidence, raw_output, latency_ms, created_at
 		FROM evaluations
 		%s
 		ORDER BY %s %s
@@ -184,7 +206,12 @@ func (r *EvaluationRepo) scanEvaluations(rows pgx.Rows) ([]*domain.Evaluation, e
 		var eval domain.Evaluation
 		var scoresJSON, issuesJSON []byte
 
-		if err := rows.Scan(&eval.ID, &eval.ConversationID, &eval.EvaluatorType, &scoresJSON, &issuesJSON, &eval.Confidence, &eval.RawOutput, &eval.LatencyMs, &eval.CreatedAt); err != nil {
+		if err := rows.Scan(
+			&eval.ID, &eval.ConversationID, &eval.EvaluatorType,
+			&eval.Status, &eval.ModelName, &eval.PromptTokens, &eval.CompletionTokens, &eval.TotalTokens,
+			&eval.EstimatedCostUSD, &eval.ErrorMessage,
+			&scoresJSON, &issuesJSON, &eval.Confidence, &eval.RawOutput, &eval.LatencyMs, &eval.CreatedAt,
+		); err != nil {
 			return nil, fmt.Errorf("scan: %w", err)
 		}
 
