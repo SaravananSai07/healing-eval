@@ -1,0 +1,151 @@
+{
+  "conversations": [
+    {
+      "conversation_id": "test_short_001",
+      "agent_version": "v1.0-test",
+      "turns": [
+        {"turn_id": 1, "role": "user", "content": "Hello, what's the weather like today?", "timestamp": "2024-01-15T10:00:00Z"},
+        {"turn_id": 2, "role": "assistant", "content": "I don't have access to real-time weather data. I'd recommend checking a weather website or app for current conditions in your area.", "timestamp": "2024-01-15T10:00:02Z"},
+        {"turn_id": 3, "role": "user", "content": "Thanks anyway!", "timestamp": "2024-01-15T10:00:10Z"}
+      ],
+      "feedback": {
+        "user_rating": 4
+      }
+    },
+    {
+      "conversation_id": "test_medium_tool_001",
+      "agent_version": "v1.0-test",
+      "turns": [
+        {"turn_id": 1, "role": "user", "content": "I need to book a flight from San Francisco to New York for next Monday.", "timestamp": "2024-01-15T10:00:00Z"},
+        {"turn_id": 2, "role": "assistant", "content": "I'll help you search for flights from San Francisco to New York for next Monday.", "tool_calls": [{"tool_name": "flight_search", "parameters": {"origin": "SFO", "destination": "NYC", "date": "2024-01-22"}, "result": {"status": "success", "data": {"flights": ["UA123", "AA456"]}}, "latency_ms": 450}], "timestamp": "2024-01-15T10:00:05Z"},
+        {"turn_id": 3, "role": "user", "content": "What are the prices?", "timestamp": "2024-01-15T10:00:20Z"},
+        {"turn_id": 4, "role": "assistant", "content": "Let me get the pricing details for those flights.", "tool_calls": [{"tool_name": "flight_pricing", "parameters": {"flight_ids": ["UA123", "AA456"]}, "result": {"status": "success", "data": {"prices": {"UA123": 350, "AA456": 380}}}, "latency_ms": 300}], "timestamp": "2024-01-15T10:00:22Z"},
+        {"turn_id": 5, "role": "user", "content": "I'll take UA123", "timestamp": "2024-01-15T10:00:40Z"},
+        {"turn_id": 6, "role": "assistant", "content": "Great! I'll proceed with booking UA123.", "tool_calls": [{"tool_name": "book_flight", "parameters": {"flight_id": "UA123", "passenger": "John Doe"}, "result": {"status": "success", "data": {"confirmation": "ABC123"}}, "latency_ms": 650}], "timestamp": "2024-01-15T10:00:43Z"},
+        {"turn_id": 7, "role": "user", "content": "Perfect, thanks!", "timestamp": "2024-01-15T10:01:00Z"}
+      ],
+      "feedback": {
+        "user_rating": 5
+      }
+    },
+    {
+      "conversation_id": "test_long_context_035",
+      "agent_version": "v1.0-test",
+      "turns": [
+        {"turn_id": 1, "role": "user", "content": "I'm planning a trip to Europe next month. Can you help me?", "timestamp": "2024-01-15T10:00:00Z"},
+        {"turn_id": 2, "role": "assistant", "content": "I'd be happy to help you plan your Europe trip! Let me know what cities you're interested in visiting.", "timestamp": "2024-01-15T10:00:02Z"},
+        {"turn_id": 3, "role": "user", "content": "I want to visit Paris, Rome, and Barcelona.", "timestamp": "2024-01-15T10:00:20Z"},
+        {"turn_id": 4, "role": "assistant", "content": "Great choices! Those are three amazing cities. How many days are you planning to spend in total?", "timestamp": "2024-01-15T10:00:22Z"},
+        {"turn_id": 5, "role": "user", "content": "About 14 days total.", "timestamp": "2024-01-15T10:00:40Z"},
+        {"turn_id": 6, "role": "assistant", "content": "Perfect! For 14 days across Paris, Rome, and Barcelona, I'd suggest 5 days in Paris, 5 days in Rome, and 4 days in Barcelona.", "timestamp": "2024-01-15T10:00:45Z"},
+        {"turn_id": 7, "role": "user", "content": "That sounds good. What about flights between cities?", "timestamp": "2024-01-15T10:01:00Z"},
+        {"turn_id": 8, "role": "assistant", "content": "You'll want to fly from Paris to Rome, then Rome to Barcelona. Budget airlines like EasyJet and Ryanair operate these routes.", "timestamp": "2024-01-15T10:01:05Z"},
+        {"turn_id": 9, "role": "user", "content": "What should I see in Paris?", "timestamp": "2024-01-15T10:01:30Z"},
+        {"turn_id": 10, "role": "assistant", "content": "In Paris, must-see attractions include the Eiffel Tower, Louvre Museum, Notre-Dame, Arc de Triomphe, and Sacré-Cœur. Don't miss the charming Montmartre neighborhood!", "timestamp": "2024-01-15T10:01:35Z"},
+        {"turn_id": 11, "role": "user", "content": "And Rome?", "timestamp": "2024-01-15T10:02:00Z"},
+        {"turn_id": 12, "role": "assistant", "content": "In Rome, you should visit the Colosseum, Roman Forum, Vatican City, Trevi Fountain, and Pantheon. The Trastevere neighborhood is wonderful for evening walks and dining.", "timestamp": "2024-01-15T10:02:05Z"},
+        {"turn_id": 13, "role": "user", "content": "What about Barcelona?", "timestamp": "2024-01-15T10:02:30Z"},
+        {"turn_id": 14, "role": "assistant", "content": "Barcelona highlights include Sagrada Familia, Park Güell, La Rambla, Gothic Quarter, and Casa Batlló. Don't miss the beach and tapas in the Gothic Quarter!", "timestamp": "2024-01-15T10:02:35Z"},
+        {"turn_id": 15, "role": "user", "content": "Should I book accommodations in advance?", "timestamp": "2024-01-15T10:03:00Z"},
+        {"turn_id": 16, "role": "assistant", "content": "Yes, absolutely! Booking 2-3 months in advance typically gets you better rates and more options, especially in popular areas near attractions.", "timestamp": "2024-01-15T10:03:05Z"},
+        {"turn_id": 17, "role": "user", "content": "What's a good budget for this trip?", "timestamp": "2024-01-15T10:03:30Z"},
+        {"turn_id": 18, "role": "assistant", "content": "For 14 days, budget around $3,000-5,000 per person including flights, accommodation, food, and attractions. This can vary based on your preferences.", "timestamp": "2024-01-15T10:03:40Z"},
+        {"turn_id": 19, "role": "user", "content": "Is travel insurance necessary?", "timestamp": "2024-01-15T10:04:00Z"},
+        {"turn_id": 20, "role": "assistant", "content": "Travel insurance is highly recommended! It covers medical emergencies, trip cancellations, lost luggage, and other unexpected issues.", "timestamp": "2024-01-15T10:04:05Z"},
+        {"turn_id": 21, "role": "user", "content": "Do I need visas?", "timestamp": "2024-01-15T10:04:30Z"},
+        {"turn_id": 22, "role": "assistant", "content": "If you're a US citizen, you don't need visas for short tourist visits to France, Italy, or Spain. However, starting in 2024, you'll need ETIAS authorization.", "timestamp": "2024-01-15T10:04:35Z"},
+        {"turn_id": 23, "role": "user", "content": "What's the best time of year to go?", "timestamp": "2024-01-15T10:05:00Z"},
+        {"turn_id": 24, "role": "assistant", "content": "Spring (April-May) and Fall (September-October) are ideal - pleasant weather, fewer crowds than summer, and better prices.", "timestamp": "2024-01-15T10:05:05Z"},
+        {"turn_id": 25, "role": "user", "content": "Should I rent a car?", "timestamp": "2024-01-15T10:05:30Z"},
+        {"turn_id": 26, "role": "assistant", "content": "For these cities, I wouldn't recommend a car. Public transportation is excellent and parking can be challenging. Use trains, metros, and walking.", "timestamp": "2024-01-15T10:05:35Z"},
+        {"turn_id": 27, "role": "user", "content": "Any tips for dealing with language barriers?", "timestamp": "2024-01-15T10:06:00Z"},
+        {"turn_id": 28, "role": "assistant", "content": "Learn a few basic phrases in each language. Most tourist areas have English speakers, but locals appreciate effort. Translation apps like Google Translate are helpful.", "timestamp": "2024-01-15T10:06:05Z"},
+        {"turn_id": 29, "role": "user", "content": "What about pickpockets?", "timestamp": "2024-01-15T10:06:30Z"},
+        {"turn_id": 30, "role": "assistant", "content": "Stay vigilant in crowded tourist areas. Use anti-theft bags, keep valuables hidden, be cautious on public transport, and avoid displaying expensive items.", "timestamp": "2024-01-15T10:06:35Z"},
+        {"turn_id": 31, "role": "user", "content": "Should I exchange currency before I go?", "timestamp": "2024-01-15T10:07:00Z"},
+        {"turn_id": 32, "role": "assistant", "content": "Get a small amount before leaving, but ATMs in Europe usually offer better exchange rates. Notify your bank of travel dates to avoid card blocks.", "timestamp": "2024-01-15T10:07:05Z"},
+        {"turn_id": 33, "role": "user", "content": "Any restaurant recommendations in Paris?", "timestamp": "2024-01-15T10:07:30Z"},
+        {"turn_id": 34, "role": "assistant", "content": "In Paris, try Le Comptoir du Relais for bistro fare, L'As du Fallafel in Le Marais, and Angelina for hot chocolate. Book fine dining restaurants weeks ahead.", "timestamp": "2024-01-15T10:07:40Z"},
+        {"turn_id": 35, "role": "user", "content": "This has been incredibly helpful! Thank you so much!", "timestamp": "2024-01-15T10:08:00Z"}
+      ],
+      "feedback": {
+        "user_rating": 5
+      }
+    },
+    {
+      "conversation_id": "test_very_long_050",
+      "agent_version": "v1.0-test",
+      "turns": [
+        {"turn_id": 1, "role": "user", "content": "I need help setting up a complete home automation system.", "timestamp": "2024-01-15T10:00:00Z"},
+        {"turn_id": 2, "role": "assistant", "content": "I'd be glad to help you set up a home automation system! Let's start with what you want to automate.", "timestamp": "2024-01-15T10:00:02Z"},
+        {"turn_id": 3, "role": "user", "content": "I want to automate lighting, temperature, security, and entertainment.", "timestamp": "2024-01-15T10:00:20Z"},
+        {"turn_id": 4, "role": "assistant", "content": "Excellent! Let's start with lighting. Smart bulbs from Philips Hue or LIFX are great options. How many rooms do you have?", "timestamp": "2024-01-15T10:00:25Z"},
+        {"turn_id": 5, "role": "user", "content": "I have 8 rooms - living room, kitchen, 3 bedrooms, 2 bathrooms, and a basement.", "timestamp": "2024-01-15T10:00:45Z"},
+        {"turn_id": 6, "role": "assistant", "content": "For 8 rooms, I'd estimate 15-20 smart bulbs. Philips Hue starter kits are a good value. You'll need a hub too.", "timestamp": "2024-01-15T10:00:50Z"},
+        {"turn_id": 7, "role": "user", "content": "What about the temperature control?", "timestamp": "2024-01-15T10:01:10Z"},
+        {"turn_id": 8, "role": "assistant", "content": "For temperature, consider a Nest or Ecobee smart thermostat. They learn your preferences and can save 10-15% on energy bills.", "timestamp": "2024-01-15T10:01:15Z"},
+        {"turn_id": 9, "role": "user", "content": "Which one is better?", "timestamp": "2024-01-15T10:01:30Z"},
+        {"turn_id": 10, "role": "assistant", "content": "Ecobee has remote sensors for multi-room temperature monitoring, while Nest has better AI learning. Both work with Alexa and Google Home.", "timestamp": "2024-01-15T10:01:35Z"},
+        {"turn_id": 11, "role": "user", "content": "I'll go with Ecobee. Now what about security?", "timestamp": "2024-01-15T10:02:00Z"},
+        {"turn_id": 12, "role": "assistant", "content": "For security, Ring or Arlo systems are popular. You'll want cameras (indoor/outdoor), doorbell camera, and motion sensors.", "timestamp": "2024-01-15T10:02:05Z"},
+        {"turn_id": 13, "role": "user", "content": "How many cameras do I need?", "timestamp": "2024-01-15T10:02:25Z"},
+        {"turn_id": 14, "role": "assistant", "content": "I'd recommend 2-3 outdoor cameras covering entrances, 1 doorbell camera, and 2-3 indoor cameras for main living areas.", "timestamp": "2024-01-15T10:02:30Z"},
+        {"turn_id": 15, "role": "user", "content": "What about smart locks?", "timestamp": "2024-01-15T10:02:50Z"},
+        {"turn_id": 16, "role": "assistant", "content": "August and Schlage make excellent smart locks. They allow keyless entry via phone, codes, or fingerprint, and integrate with home systems.", "timestamp": "2024-01-15T10:02:55Z"},
+        {"turn_id": 17, "role": "user", "content": "Should I get one for every door?", "timestamp": "2024-01-15T10:03:15Z"},
+        {"turn_id": 18, "role": "assistant", "content": "At minimum, install on your main entrance and garage door. Back door is also recommended if you use it frequently.", "timestamp": "2024-01-15T10:03:20Z"},
+        {"turn_id": 19, "role": "user", "content": "Now entertainment - I want to control my TV and sound system.", "timestamp": "2024-01-15T10:03:40Z"},
+        {"turn_id": 20, "role": "assistant", "content": "For entertainment, Logitech Harmony remotes work great, or use smart TVs with built-in Alexa/Google Assistant. Sonos is excellent for multi-room audio.", "timestamp": "2024-01-15T10:03:45Z"},
+        {"turn_id": 21, "role": "user", "content": "I have a Samsung TV and Bose speakers. Will they work?", "timestamp": "2024-01-15T10:04:10Z"},
+        {"turn_id": 22, "role": "assistant", "content": "Samsung TVs have SmartThings built-in, which is perfect! For Bose, you might need a smart plug or IR blaster to control them.", "timestamp": "2024-01-15T10:04:15Z"},
+        {"turn_id": 23, "role": "user", "content": "What hub should I use to tie everything together?", "timestamp": "2024-01-15T10:04:35Z"},
+        {"turn_id": 24, "role": "assistant", "content": "Samsung SmartThings or Amazon Echo Plus can serve as your central hub. They support most devices and have good app interfaces.", "timestamp": "2024-01-15T10:04:40Z"},
+        {"turn_id": 25, "role": "user", "content": "I prefer Alexa. How many Echo devices should I get?", "timestamp": "2024-01-15T10:05:00Z"},
+        {"turn_id": 26, "role": "assistant", "content": "For 8 rooms, I'd suggest 3-4 Echo devices: one Echo Plus as the hub, one in the living room, one in the master bedroom, and one in the kitchen.", "timestamp": "2024-01-15T10:05:05Z"},
+        {"turn_id": 27, "role": "user", "content": "What's the total estimated cost for all this?", "timestamp": "2024-01-15T10:05:25Z"},
+        {"turn_id": 28, "role": "assistant", "content": "Rough estimate: Lighting ($800), Thermostat ($250), Security ($800), Smart Locks ($600), Echo devices ($400), Entertainment ($300). Total: ~$3,150.", "timestamp": "2024-01-15T10:05:35Z"},
+        {"turn_id": 29, "role": "user", "content": "That's more than I expected. Can we reduce costs?", "timestamp": "2024-01-15T10:06:00Z"},
+        {"turn_id": 30, "role": "assistant", "content": "Yes! Start with essentials: lighting and thermostat ($1,050). Add security gradually. Use smart plugs ($15 each) instead of some smart bulbs.", "timestamp": "2024-01-15T10:06:05Z"},
+        {"turn_id": 31, "role": "user", "content": "That's better. How long does installation take?", "timestamp": "2024-01-15T10:06:30Z"},
+        {"turn_id": 32, "role": "assistant", "content": "Most devices are DIY and take 15-30 minutes each. Thermostat might need an electrician (2-3 hours). Budget a full weekend for everything.", "timestamp": "2024-01-15T10:06:35Z"},
+        {"turn_id": 33, "role": "user", "content": "Can I install the thermostat myself?", "timestamp": "2024-01-15T10:07:00Z"},
+        {"turn_id": 34, "role": "assistant", "content": "If you're comfortable with basic wiring, yes. Ecobee has good instructions. Otherwise, hire an HVAC tech ($100-150) to ensure it's done safely.", "timestamp": "2024-01-15T10:07:05Z"},
+        {"turn_id": 35, "role": "user", "content": "What about Wi-Fi requirements? Will my network handle all this?", "timestamp": "2024-01-15T10:07:30Z"},
+        {"turn_id": 36, "role": "assistant", "content": "You'll have 30-40 connected devices. A good dual-band router (AC1900 or better) is essential. Consider a mesh system like Eero for full coverage.", "timestamp": "2024-01-15T10:07:35Z"},
+        {"turn_id": 37, "role": "user", "content": "I have an old router. Should I upgrade?", "timestamp": "2024-01-15T10:08:00Z"},
+        {"turn_id": 38, "role": "assistant", "content": "Definitely upgrade if it's more than 3-4 years old. Modern routers handle multiple devices better. Budget $150-250 for a quality mesh system.", "timestamp": "2024-01-15T10:08:05Z"},
+        {"turn_id": 39, "role": "user", "content": "Are there any monthly fees?", "timestamp": "2024-01-15T10:08:30Z"},
+        {"turn_id": 40, "role": "assistant", "content": "Ring/Arlo have optional cloud storage ($3-10/month). Most others work without fees, though premium features may cost extra.", "timestamp": "2024-01-15T10:08:35Z"},
+        {"turn_id": 41, "role": "user", "content": "Can I control everything when I'm away from home?", "timestamp": "2024-01-15T10:09:00Z"},
+        {"turn_id": 42, "role": "assistant", "content": "Yes! All these devices have mobile apps. You can control lights, adjust temperature, check cameras, and lock doors from anywhere with internet.", "timestamp": "2024-01-15T10:09:05Z"},
+        {"turn_id": 43, "role": "user", "content": "What about privacy and security concerns?", "timestamp": "2024-01-15T10:09:30Z"},
+        {"turn_id": 44, "role": "assistant", "content": "Use strong, unique passwords for each device. Enable two-factor authentication. Keep firmware updated. Consider a separate IoT network on your router.", "timestamp": "2024-01-15T10:09:35Z"},
+        {"turn_id": 45, "role": "user", "content": "How do I set up automations and routines?", "timestamp": "2024-01-15T10:10:00Z"},
+        {"turn_id": 46, "role": "assistant", "content": "Use the Alexa app to create routines. Examples: 'Good Morning' turns on lights and adjusts thermostat, 'Leaving Home' locks doors and arms security.", "timestamp": "2024-01-15T10:10:05Z"},
+        {"turn_id": 47, "role": "user", "content": "Can I make it respond to motion?", "timestamp": "2024-01-15T10:10:30Z"},
+        {"turn_id": 48, "role": "assistant", "content": "Yes! Motion sensors can trigger lights, cameras, or alerts. Example: basement lights turn on when motion detected, off after 5 minutes of no motion.", "timestamp": "2024-01-15T10:10:35Z"},
+        {"turn_id": 49, "role": "user", "content": "This is exactly what I needed! One last question - best place to start shopping?", "timestamp": "2024-01-15T10:11:00Z"},
+        {"turn_id": 50, "role": "assistant", "content": "Amazon often has the best prices and bundles. Best Buy price-matches and offers installation services. Watch for Black Friday/Prime Day deals for big savings!", "timestamp": "2024-01-15T10:11:05Z"}
+      ],
+      "feedback": {
+        "user_rating": 5
+      }
+    },
+    {
+      "conversation_id": "test_contradictions_001",
+      "agent_version": "v1.0-test",
+      "turns": [
+        {"turn_id": 1, "role": "user", "content": "What's the capital of France?", "timestamp": "2024-01-15T10:00:00Z"},
+        {"turn_id": 2, "role": "assistant", "content": "The capital of France is Paris.", "timestamp": "2024-01-15T10:00:02Z"},
+        {"turn_id": 3, "role": "user", "content": "And what's the largest city in France?", "timestamp": "2024-01-15T10:00:20Z"},
+        {"turn_id": 4, "role": "assistant", "content": "The largest city in France is Lyon.", "timestamp": "2024-01-15T10:00:22Z"},
+        {"turn_id": 5, "role": "user", "content": "Wait, I thought you said the capital was Paris?", "timestamp": "2024-01-15T10:00:40Z"},
+        {"turn_id": 6, "role": "assistant", "content": "Yes, Paris is the capital of France and also its largest city. I apologize for the confusion in my previous response.", "timestamp": "2024-01-15T10:00:45Z"}
+      ],
+      "feedback": {
+        "user_rating": 3
+      }
+    }
+  ]
+}
+

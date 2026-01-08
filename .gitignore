@@ -4,3 +4,7 @@ Eval*.md
 
 .env
 .DS_Store
+
+server.log
+
+bin/
