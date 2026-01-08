@@ -47,12 +47,15 @@ type RedisConfig struct {
 
 // LLMConfig holds LLM provider configuration.
 type LLMConfig struct {
-	OpenAIAPIKey    string
-	AnthropicAPIKey string
-	OllamaBaseURL   string
-	OllamaModel     string
-	DefaultProvider string // "openai", "anthropic", or "ollama"
-	Timeout         time.Duration
+	OpenAIAPIKey          string
+	AnthropicAPIKey       string
+	OllamaBaseURL         string
+	OllamaModel           string
+	OpenRouterAPIKey      string
+	OpenRouterModel       string
+	OpenRouterReasoning   bool
+	DefaultProvider       string // "openai", "anthropic", "ollama", or "openrouter"
+	Timeout               time.Duration
 }
 
 // WorkerConfig holds worker configuration.
@@ -93,12 +96,15 @@ func Load() (*Config, error) {
 			DB:       getEnvAsInt("REDIS_DB", 0),
 		},
 		LLM: LLMConfig{
-			OpenAIAPIKey:    getEnv("OPENAI_API_KEY", ""),
-			AnthropicAPIKey: getEnv("ANTHROPIC_API_KEY", ""),
-			OllamaBaseURL:   getEnv("OLLAMA_BASE_URL", "http://localhost:11434"),
-			OllamaModel:     getEnv("OLLAMA_MODEL", "llama3.1:8b"),
-			DefaultProvider: getEnv("LLM_DEFAULT_PROVIDER", "ollama"),
-			Timeout:         getEnvAsDuration("LLM_TIMEOUT", 120*time.Second),
+			OpenAIAPIKey:        getEnv("OPENAI_API_KEY", ""),
+			AnthropicAPIKey:     getEnv("ANTHROPIC_API_KEY", ""),
+			OllamaBaseURL:       getEnv("OLLAMA_BASE_URL", "http://localhost:11434"),
+			OllamaModel:         getEnv("OLLAMA_MODEL", "llama3.1:8b"),
+			OpenRouterAPIKey:    getEnv("OPENROUTER_API_KEY", ""),
+			OpenRouterModel:     getEnv("OPENROUTER_MODEL", "nvidia/nemotron-3-nano-30b-a3b:free"),
+			OpenRouterReasoning: getEnvAsBool("OPENROUTER_ENABLE_REASONING", false),
+			DefaultProvider:     getEnv("LLM_DEFAULT_PROVIDER", "ollama"),
+			Timeout:             getEnvAsDuration("LLM_TIMEOUT", 120*time.Second),
 		},
 		Worker: WorkerConfig{
 			Concurrency:   getEnvAsInt("WORKER_CONCURRENCY", 10),
@@ -147,6 +153,15 @@ func getEnvAsDuration(key string, defaultValue time.Duration) time.Duration {
 	if value := os.Getenv(key); value != "" {
 		if duration, err := time.ParseDuration(value); err == nil {
 			return duration
+		}
+	}
+	return defaultValue
+}
+
+func getEnvAsBool(key string, defaultValue bool) bool {
+	if value := os.Getenv(key); value != "" {
+		if boolValue, err := strconv.ParseBool(value); err == nil {
+			return boolValue
 		}
 	}
 	return defaultValue
