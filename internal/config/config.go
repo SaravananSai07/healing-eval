@@ -35,6 +35,7 @@ type DatabaseConfig struct {
 	MaxConns        int
 	MinConns        int
 	MaxConnLifetime time.Duration
+	URL             string
 }
 
 // RedisConfig holds Redis configuration.
@@ -47,15 +48,15 @@ type RedisConfig struct {
 
 // LLMConfig holds LLM provider configuration.
 type LLMConfig struct {
-	OpenAIAPIKey          string
-	AnthropicAPIKey       string
-	OllamaBaseURL         string
-	OllamaModel           string
-	OpenRouterAPIKey      string
-	OpenRouterModel       string
-	OpenRouterReasoning   bool
-	DefaultProvider       string // "openai", "anthropic", "ollama", or "openrouter"
-	Timeout               time.Duration
+	OpenAIAPIKey        string
+	AnthropicAPIKey     string
+	OllamaBaseURL       string
+	OllamaModel         string
+	OpenRouterAPIKey    string
+	OpenRouterModel     string
+	OpenRouterReasoning bool
+	DefaultProvider     string // "openai", "anthropic", "ollama", or "openrouter"
+	Timeout             time.Duration
 }
 
 // WorkerConfig holds worker configuration.
@@ -80,6 +81,7 @@ func Load() (*Config, error) {
 			WriteTimeout: getEnvAsDuration("SERVER_WRITE_TIMEOUT", 30*time.Second),
 		},
 		Database: DatabaseConfig{
+			URL:             getEnv("DATABASE_URL", ""),
 			Host:            getEnv("DB_HOST", "localhost"),
 			Port:            getEnvAsInt("DB_PORT", 5432),
 			User:            getEnv("DB_USER", "postgres"),
@@ -120,6 +122,9 @@ func Load() (*Config, error) {
 
 // DSN returns the PostgreSQL connection string.
 func (c *DatabaseConfig) DSN() string {
+	if c.URL != "" {
+		return c.URL
+	}
 	return "postgres://" + c.User + ":" + c.Password + "@" + c.Host + ":" + strconv.Itoa(c.Port) + "/" + c.Database + "?sslmode=disable"
 }
 
