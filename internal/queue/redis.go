@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/redis/go-redis/v9"
@@ -19,17 +20,57 @@ type RedisQueue struct {
 }
 
 func NewRedisQueue(cfg *config.RedisConfig, workerCfg *config.WorkerConfig) (*RedisQueue, error) {
-	client := redis.NewClient(&redis.Options{
-		Addr:     cfg.Addr(),
-		Password: cfg.Password,
-		DB:       cfg.DB,
-	})
+	if err := cfg.Validate(); err != nil {
+		return nil, fmt.Errorf("redis config validation failed: %w", err)
+	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
+	var client *redis.Client
+	var redisAddr string
 
-	if err := client.Ping(ctx).Err(); err != nil {
-		return nil, fmt.Errorf("ping: %w", err)
+	if cfg.URL != "" {
+		opt, err := redis.ParseURL(cfg.URL)
+		if err != nil {
+			return nil, fmt.Errorf("parse REDIS_URL: %w", err)
+		}
+		client = redis.NewClient(opt)
+		redisAddr = opt.Addr
+		log.Printf("Connecting to Redis via REDIS_URL at %s (DB: %d)", redisAddr, opt.DB)
+	} else {
+		client = redis.NewClient(&redis.Options{
+			Addr:     cfg.Addr(),
+			Password: cfg.Password,
+			DB:       cfg.DB,
+		})
+		redisAddr = cfg.Addr()
+		log.Printf("Connecting to Redis at %s (DB: %d)", redisAddr, cfg.DB)
+	}
+
+	ctx := context.Background()
+	maxRetries := 5
+	baseDelay := 1 * time.Second
+
+	var lastErr error
+	for attempt := 0; attempt < maxRetries; attempt++ {
+		pingCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+		err := client.Ping(pingCtx).Err()
+		cancel()
+
+		if err == nil {
+			log.Printf("Successfully connected to Redis at %s", redisAddr)
+			break
+		}
+
+		lastErr = err
+		if attempt < maxRetries-1 {
+			delay := baseDelay * time.Duration(1<<uint(attempt))
+			log.Printf("Redis connection attempt %d/%d failed: %v. Retrying in %v...", attempt+1, maxRetries, err, delay)
+			time.Sleep(delay)
+		}
+	}
+
+	if lastErr != nil {
+		client.Close()
+		return nil, fmt.Errorf("failed to connect to Redis at %s after %d attempts: %w", redisAddr, maxRetries, lastErr)
 	}
 
 	q := &RedisQueue{
@@ -39,8 +80,11 @@ func NewRedisQueue(cfg *config.RedisConfig, workerCfg *config.WorkerConfig) (*Re
 		consumerName:  workerCfg.ConsumerName,
 	}
 
-	if err := q.ensureConsumerGroup(ctx); err != nil {
-		return nil, err
+	groupCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+	if err := q.ensureConsumerGroup(groupCtx); err != nil {
+		client.Close()
+		return nil, fmt.Errorf("ensure consumer group: %w", err)
 	}
 
 	return q, nil
@@ -169,4 +213,3 @@ func (q *RedisQueue) Len(ctx context.Context) (int64, error) {
 func (q *RedisQueue) Client() *redis.Client {
 	return q.client
 }
-

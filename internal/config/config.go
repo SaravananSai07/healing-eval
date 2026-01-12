@@ -1,8 +1,11 @@
 package config
 
 import (
+	"fmt"
+	"net/url"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/joho/godotenv"
@@ -40,6 +43,7 @@ type DatabaseConfig struct {
 
 // RedisConfig holds Redis configuration.
 type RedisConfig struct {
+	URL      string
 	Host     string
 	Port     int
 	Password string
@@ -82,21 +86,16 @@ func Load() (*Config, error) {
 		},
 		Database: DatabaseConfig{
 			URL:             getEnv("DATABASE_URL", ""),
-			Host:            getEnv("DB_HOST", getEnv("PGHOST", "localhost")),
-			Port:            getEnvAsInt("DB_PORT", getEnvAsInt("PGPORT", 5432)),
-			User:            getEnv("DB_USER", getEnv("PGUSER", "postgres")),
-			Password:        getEnv("DB_PASSWORD", getEnv("PGPASSWORD", "postgres")),
-			Database:        getEnv("DB_NAME", getEnv("PGDATABASE", "healing_eval")),
+			Host:            getEnv("DB_HOST", "localhost"),
+			Port:            getEnvAsInt("DB_PORT", 5432),
+			User:            getEnv("DB_USER", "postgres"),
+			Password:        getEnv("DB_PASSWORD", "postgres"),
+			Database:        getEnv("DB_NAME", "healing_eval"),
 			MaxConns:        getEnvAsInt("DB_MAX_CONNS", 25),
 			MinConns:        getEnvAsInt("DB_MIN_CONNS", 5),
 			MaxConnLifetime: getEnvAsDuration("DB_MAX_CONN_LIFETIME", time.Hour),
 		},
-		Redis: RedisConfig{
-			Host:     getEnv("REDIS_HOST", getEnv("REDISHOST", "localhost")),
-			Port:     getEnvAsInt("REDIS_PORT", getEnvAsInt("REDISPORT", 6379)),
-			Password: getEnv("REDIS_PASSWORD", getEnv("REDISPASSWORD", "")),
-			DB:       getEnvAsInt("REDIS_DB", 0),
-		},
+		Redis: loadRedisConfig(),
 		LLM: LLMConfig{
 			OpenAIAPIKey:        getEnv("OPENAI_API_KEY", ""),
 			AnthropicAPIKey:     getEnv("ANTHROPIC_API_KEY", ""),
@@ -131,6 +130,70 @@ func (c *DatabaseConfig) DSN() string {
 // Addr returns the Redis address.
 func (c *RedisConfig) Addr() string {
 	return c.Host + ":" + strconv.Itoa(c.Port)
+}
+
+func (c *RedisConfig) Validate() error {
+	if c.Host == "" {
+		return fmt.Errorf("Redis host is empty. Set REDIS_URL or REDIS_HOST environment variable")
+	}
+	if c.Port <= 0 || c.Port > 65535 {
+		return fmt.Errorf("invalid Redis port: %d", c.Port)
+	}
+	return nil
+}
+
+func loadRedisConfig() RedisConfig {
+	redisURL := getEnv("REDIS_URL", "")
+	if redisURL != "" {
+		return parseRedisURL(redisURL)
+	}
+
+	return RedisConfig{
+		Host:     getEnv("REDISHOST", getEnv("REDIS_HOST", "")),
+		Port:     getEnvAsInt("REDISPORT", getEnvAsInt("REDIS_PORT", 6379)),
+		Password: getEnv("REDISPASSWORD", getEnv("REDIS_PASSWORD", "")),
+		DB:       getEnvAsInt("REDIS_DB", 0),
+	}
+}
+
+func parseRedisURL(redisURL string) RedisConfig {
+	cfg := RedisConfig{
+		URL:  redisURL,
+		Port: 6379,
+		DB:   0,
+	}
+
+	if !strings.HasPrefix(redisURL, "redis://") && !strings.HasPrefix(redisURL, "rediss://") {
+		redisURL = "redis://" + redisURL
+		cfg.URL = redisURL
+	}
+
+	u, err := url.Parse(redisURL)
+	if err != nil {
+		return cfg
+	}
+
+	if u.User != nil {
+		cfg.Password, _ = u.User.Password()
+	}
+
+	cfg.Host = u.Hostname()
+	if u.Port() != "" {
+		if port, err := strconv.Atoi(u.Port()); err == nil {
+			cfg.Port = port
+		}
+	}
+
+	if u.Path != "" {
+		dbStr := strings.TrimPrefix(u.Path, "/")
+		if dbStr != "" {
+			if db, err := strconv.Atoi(dbStr); err == nil {
+				cfg.DB = db
+			}
+		}
+	}
+
+	return cfg
 }
 
 // Addr returns the server address.
