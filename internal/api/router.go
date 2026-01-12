@@ -43,7 +43,7 @@ func NewRouter(db *storage.PostgresDB, q *queue.RedisQueue) *Router {
 	suggHandler := handler.NewSuggestionHandler(suggRepo, evalRepo, llmClient)
 	reviewHandler := handler.NewReviewHandler(reviewQueueRepo, evalRepo, convRepo)
 	metricsHandler := handler.NewMetricsHandler()
-	webHandler := handler.NewWebHandler(convRepo, evalRepo, suggRepo)
+	webHandler := handler.NewWebHandler(convRepo, evalRepo, suggRepo, reviewQueueRepo)
 
 	engine.GET("/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{"status": "ok"})
@@ -64,6 +64,7 @@ func NewRouter(db *storage.PostgresDB, q *queue.RedisQueue) *Router {
 	engine.GET("/partials/blind-spots", webHandler.BlindSpots)
 	engine.GET("/partials/conversations-list", webHandler.ConversationsList)
 	engine.GET("/partials/conversation/:id", webHandler.ConversationDetail)
+	engine.GET("/partials/pending-reviews", webHandler.PendingReviews)
 
 	engine.GET("/api/stats/conversations", webHandler.StatConversations)
 	engine.GET("/api/stats/evaluations", webHandler.StatEvaluations)
@@ -117,4 +118,3 @@ func NewRouter(db *storage.PostgresDB, q *queue.RedisQueue) *Router {
 func (r *Router) Engine() *gin.Engine {
 	return r.engine
 }
-

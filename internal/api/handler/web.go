@@ -13,16 +13,19 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/saisaravanan/healing-eval/internal/domain"
 	"github.com/saisaravanan/healing-eval/internal/storage"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 type WebHandler struct {
-	templates map[string]*template.Template
-	convRepo  *storage.ConversationRepo
-	evalRepo  *storage.EvaluationRepo
-	suggRepo  *storage.SuggestionRepo
+	templates  map[string]*template.Template
+	convRepo   *storage.ConversationRepo
+	evalRepo   *storage.EvaluationRepo
+	suggRepo   *storage.SuggestionRepo
+	reviewRepo *storage.ReviewQueueRepo
 }
 
-func NewWebHandler(convRepo *storage.ConversationRepo, evalRepo *storage.EvaluationRepo, suggRepo *storage.SuggestionRepo) *WebHandler {
+func NewWebHandler(convRepo *storage.ConversationRepo, evalRepo *storage.EvaluationRepo, suggRepo *storage.SuggestionRepo, reviewRepo *storage.ReviewQueueRepo) *WebHandler {
 	funcMap := template.FuncMap{
 		"scoreClass": func(score float64) string {
 			if score >= 0.8 {
@@ -150,7 +153,7 @@ func NewWebHandler(convRepo *storage.ConversationRepo, evalRepo *storage.Evaluat
 			case "error", "failed":
 				return "Failed"
 			default:
-				return strings.Title(str)
+				return cases.Title(language.English).String(str)
 			}
 		},
 		"formatSuggestionType": func(t interface{}) string {
@@ -183,10 +186,11 @@ func NewWebHandler(convRepo *storage.ConversationRepo, evalRepo *storage.Evaluat
 	templates["partials"] = partials
 
 	return &WebHandler{
-		templates: templates,
-		convRepo:  convRepo,
-		evalRepo:  evalRepo,
-		suggRepo:  suggRepo,
+		templates:  templates,
+		convRepo:   convRepo,
+		evalRepo:   evalRepo,
+		suggRepo:   suggRepo,
+		reviewRepo: reviewRepo,
 	}
 }
 
@@ -229,6 +233,42 @@ func (h *WebHandler) Reviews(c *gin.Context) {
 		Title: "Human Review Queue",
 		Page:  "reviews",
 	})
+}
+
+func (h *WebHandler) PendingReviews(c *gin.Context) {
+	ctx := c.Request.Context()
+	pageStr := c.DefaultQuery("page", "1")
+	page := 1
+	if p, err := strconv.Atoi(pageStr); err == nil && p > 0 {
+		page = p
+	}
+	perPage := 10
+
+	total, _ := h.reviewRepo.CountPending(ctx)
+	totalPages := (total + perPage - 1) / perPage
+	if totalPages == 0 {
+		totalPages = 1
+	}
+
+	offset := (page - 1) * perPage
+	reviews, err := h.reviewRepo.GetPendingPaginated(ctx, perPage, offset)
+	if err != nil {
+		reviews = nil
+	}
+
+	data := struct {
+		Reviews     interface{}
+		CurrentPage int
+		TotalPages  int
+		Total       int
+	}{
+		Reviews:     reviews,
+		CurrentPage: page,
+		TotalPages:  totalPages,
+		Total:       total,
+	}
+
+	h.renderPartial(c, "pending-reviews", data)
 }
 
 func (h *WebHandler) renderPage(c *gin.Context, name string, data PageData) {

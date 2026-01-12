@@ -8,7 +8,7 @@
             Conversations that need human review due to low confidence, partial evaluation, or quality concerns
         </p>
     </div>
-    <div hx-get="/api/v1/reviews/pending?limit=50" hx-trigger="load" hx-swap="innerHTML">
+    <div id="reviews-content" hx-get="/partials/pending-reviews" hx-trigger="load" hx-swap="innerHTML">
         <div class="loading"></div>
     </div>
 </div>

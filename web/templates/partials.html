@@ -291,6 +291,54 @@
 {{end}}
 {{end}}
 
+{{define "pending-reviews"}}
+{{if .Reviews}}
+<div class="table-wrapper">
+<table>
+    <thead>
+        <tr>
+            <th>Conversation</th>
+            <th>Reason</th>
+            <th>Priority</th>
+            <th>Status</th>
+            <th>Created</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        {{range .Reviews}}
+        <tr onclick="viewReview('{{.ConversationID}}')">
+            <td><code class="mono" style="font-size: 0.75rem;">{{.ConversationID}}</code></td>
+            <td style="max-width: 200px;">{{.Reason}}</td>
+            <td>
+                {{if eq .Priority 1}}<span class="badge badge-error">High</span>
+                {{else if eq .Priority 2}}<span class="badge badge-warning">Medium</span>
+                {{else}}<span class="badge badge-info">Low</span>{{end}}
+            </td>
+            <td><span class="badge badge-{{statusClass .Status}}">{{formatStatus .Status}}</span></td>
+            <td style="font-size: 0.8rem;">{{formatTime .CreatedAt}}</td>
+            <td><button class="action-btn action-btn-view">Review</button></td>
+        </tr>
+        {{end}}
+    </tbody>
+</table>
+</div>
+{{if gt .TotalPages 1}}
+<div class="pagination">
+    <button hx-get="/partials/pending-reviews?page={{sub .CurrentPage 1}}" hx-target="#reviews-content" hx-swap="innerHTML" {{if le .CurrentPage 1}}disabled{{end}}>← Previous</button>
+    <span>Page {{.CurrentPage}} of {{.TotalPages}} ({{.Total}} total)</span>
+    <button hx-get="/partials/pending-reviews?page={{add .CurrentPage 1}}" hx-target="#reviews-content" hx-swap="innerHTML" {{if ge .CurrentPage .TotalPages}}disabled{{end}}>Next →</button>
+</div>
+{{end}}
+{{else}}
+<div class="empty-state">
+    <div class="empty-state-icon">✅</div>
+    <h3>No Pending Reviews</h3>
+    <p>All conversations have been reviewed or don't require human review.</p>
+</div>
+{{end}}
+{{end}}
+
 {{define "conversation-detail"}}
 <h2 style="margin-bottom: 8px;">Conversation Details</h2>
 <div style="display: flex; gap: 16px; font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 24px;">

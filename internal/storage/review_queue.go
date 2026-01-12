@@ -40,8 +40,15 @@ func (r *ReviewQueueRepo) AddToQueue(ctx context.Context, item *domain.ReviewQue
 }
 
 func (r *ReviewQueueRepo) GetPending(ctx context.Context, limit int) ([]*domain.ReviewQueueItem, error) {
+	return r.GetPendingPaginated(ctx, limit, 0)
+}
+
+func (r *ReviewQueueRepo) GetPendingPaginated(ctx context.Context, limit, offset int) ([]*domain.ReviewQueueItem, error) {
 	if limit <= 0 || limit > 100 {
 		limit = 50
+	}
+	if offset < 0 {
+		offset = 0
 	}
 
 	rows, err := r.db.Pool.Query(ctx, `
@@ -50,14 +57,25 @@ func (r *ReviewQueueRepo) GetPending(ctx context.Context, limit int) ([]*domain.
 		FROM human_review_queue
 		WHERE status = 'pending'
 		ORDER BY priority ASC, created_at ASC
-		LIMIT $1
-	`, limit)
+		LIMIT $1 OFFSET $2
+	`, limit, offset)
 	if err != nil {
 		return nil, fmt.Errorf("query pending reviews: %w", err)
 	}
 	defer rows.Close()
 
 	return r.scanReviewQueueItems(rows)
+}
+
+func (r *ReviewQueueRepo) CountPending(ctx context.Context) (int, error) {
+	var count int
+	err := r.db.Pool.QueryRow(ctx, `
+		SELECT COUNT(*) FROM human_review_queue WHERE status = 'pending'
+	`).Scan(&count)
+	if err != nil {
+		return 0, fmt.Errorf("count pending reviews: %w", err)
+	}
+	return count, nil
 }
 
 func (r *ReviewQueueRepo) GetByID(ctx context.Context, id string) (*domain.ReviewQueueItem, error) {
@@ -131,4 +149,3 @@ func (r *ReviewQueueRepo) scanReviewQueueItems(rows pgx.Rows) ([]*domain.ReviewQ
 
 	return items, nil
 }
-
