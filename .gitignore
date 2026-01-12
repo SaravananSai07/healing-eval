@@ -8,3 +8,5 @@ Eval*.md
 server.log
 
 bin/
+
+scripts/*

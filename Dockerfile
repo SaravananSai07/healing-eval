@@ -14,13 +14,17 @@ RUN CGO_ENABLED=0 GOOS=linux go build -o /worker ./cmd/worker
 
 FROM alpine:3.19 AS server
 
-RUN apk add --no-cache ca-certificates tzdata
+RUN apk add --no-cache ca-certificates tzdata postgresql-client
 
 COPY --from=builder /server /server
 COPY --from=builder /app/web /web
+COPY --from=builder /app/migrations /migrations
+COPY docker-entrypoint.sh /docker-entrypoint.sh
+RUN chmod +x /docker-entrypoint.sh
 
 EXPOSE 8080
 
+ENTRYPOINT ["/docker-entrypoint.sh"]
 CMD ["/server"]
 
 FROM alpine:3.19 AS worker
