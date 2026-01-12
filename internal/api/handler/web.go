@@ -506,7 +506,7 @@ func (h *WebHandler) renderPartial(c *gin.Context, name string, data interface{}
 
 func (h *WebHandler) StatConversations(c *gin.Context) {
 	ctx := c.Request.Context()
-	convs, _ := h.convRepo.GetUnprocessed(ctx, 0)
+	convs, _ := h.convRepo.GetUnprocessed(ctx, 100)
 
 	count := len(convs)
 	resp, err := h.evalRepo.Query(ctx, &domain.EvaluationsQueryRequest{Limit: 1})
