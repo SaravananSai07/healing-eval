@@ -169,7 +169,7 @@ func NewWebHandler(convRepo *storage.ConversationRepo, evalRepo *storage.Evaluat
 	}
 
 	templates := make(map[string]*template.Template)
-	pages := []string{"dashboard", "suggestions", "metrics", "conversations"}
+	pages := []string{"dashboard", "suggestions", "metrics", "conversations", "reviews"}
 
 	for _, page := range pages {
 		t := template.Must(template.New("").Funcs(funcMap).ParseFiles(
