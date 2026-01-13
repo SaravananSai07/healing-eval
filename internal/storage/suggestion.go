@@ -128,6 +128,33 @@ func (r *SuggestionRepo) UpdateStatus(ctx context.Context, id string, status dom
 	return nil
 }
 
+func (r *SuggestionRepo) GetByPatternID(ctx context.Context, patternID string) (*domain.Suggestion, error) {
+	var s domain.Suggestion
+	var impactJSON []byte
+
+	err := r.db.Pool.QueryRow(ctx, `
+		SELECT id, pattern_id, suggestion_type, target, suggestion, rationale, confidence, status, impact_measured, created_at, updated_at
+		FROM improvement_suggestions
+		WHERE pattern_id = $1 AND status = 'pending'
+		ORDER BY created_at DESC
+		LIMIT 1
+	`, patternID).Scan(&s.ID, &s.PatternID, &s.Type, &s.Target, &s.Suggestion, &s.Rationale, &s.Confidence, &s.Status, &impactJSON, &s.CreatedAt, &s.UpdatedAt)
+
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("query: %w", err)
+	}
+
+	if impactJSON != nil {
+		s.ImpactMeasured = &domain.ImpactMetrics{}
+		json.Unmarshal(impactJSON, s.ImpactMeasured)
+	}
+
+	return &s, nil
+}
+
 func (r *SuggestionRepo) UpdateImpact(ctx context.Context, id string, impact *domain.ImpactMetrics) error {
 	impactJSON, err := json.Marshal(impact)
 	if err != nil {

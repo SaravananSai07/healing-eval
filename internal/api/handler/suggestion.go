@@ -72,10 +72,8 @@ func (h *SuggestionHandler) Approve(c *gin.Context) {
 	id := c.Param("id")
 
 	var req domain.ApproveRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
-		return
-	}
+	c.ShouldBindJSON(&req)
+	c.ShouldBind(&req)
 
 	if err := h.repo.UpdateStatus(c.Request.Context(), id, domain.SuggestionStatusApproved); err != nil {
 		if err.Error() == "suggestion not found" {
@@ -93,10 +91,8 @@ func (h *SuggestionHandler) Reject(c *gin.Context) {
 	id := c.Param("id")
 
 	var req domain.RejectRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request body"})
-		return
-	}
+	c.ShouldBindJSON(&req)
+	c.ShouldBind(&req)
 
 	if err := h.repo.UpdateStatus(c.Request.Context(), id, domain.SuggestionStatusRejected); err != nil {
 		if err.Error() == "suggestion not found" {
@@ -147,12 +143,12 @@ func (h *SuggestionHandler) Generate(c *gin.Context) {
 		MaxScore       float64 `json:"max_score"`
 		MinOccurrences int     `json:"min_occurrences"`
 	}
-	
+
 	// Set defaults
 	req.HoursBack = 24
 	req.MaxScore = 0.7
 	req.MinOccurrences = 5
-	
+
 	if err := c.ShouldBindJSON(&req); err != nil {
 		// Use defaults if no body provided
 		log.Printf("Using default parameters for suggestion generation")
@@ -163,7 +159,7 @@ func (h *SuggestionHandler) Generate(c *gin.Context) {
 	// Query recent low-scoring evaluations
 	dateTo := time.Now()
 	dateFrom := dateTo.Add(-time.Duration(req.HoursBack) * time.Hour)
-	
+
 	evalReq := &domain.EvaluationsQueryRequest{
 		DateFrom:        &dateFrom,
 		DateTo:          &dateTo,
@@ -193,7 +189,7 @@ func (h *SuggestionHandler) Generate(c *gin.Context) {
 			"patterns_detected":     0,
 			"suggestions_generated": 0,
 			"suggestions_stored":    0,
-			"message":              "No significant failure patterns detected",
+			"message":               "No significant failure patterns detected",
 		})
 		return
 	}
@@ -206,9 +202,16 @@ func (h *SuggestionHandler) Generate(c *gin.Context) {
 		return
 	}
 
-	// Store suggestions
+	// Store suggestions (skip duplicates)
 	stored := 0
 	for _, suggestion := range suggestions {
+		// Check if suggestion already exists for this pattern
+		existing, err := h.repo.GetByPatternID(c.Request.Context(), suggestion.PatternID)
+		if err == nil && existing != nil {
+			log.Printf("Suggestion already exists for pattern %s, skipping", suggestion.PatternID)
+			continue
+		}
+
 		if err := h.repo.Create(c.Request.Context(), suggestion); err != nil {
 			log.Printf("Error storing suggestion: %v", err)
 			continue
@@ -220,7 +223,6 @@ func (h *SuggestionHandler) Generate(c *gin.Context) {
 		"patterns_detected":     len(patterns),
 		"suggestions_generated": len(suggestions),
 		"suggestions_stored":    stored,
-		"message":              "Suggestion generation completed successfully",
+		"message":               "Suggestion generation completed successfully",
 	})
 }
-
